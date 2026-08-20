@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>निपुण महाराष्ट्र अभियान - विद्यार्थी मूल्यमापन तक्ता</title>
+<title>मिशन निपुण बीड - विद्यार्थी मूल्यमापन तक्ता</title>
 <style>
   :root {
     --navy: #0056b3;
@@ -65,7 +65,7 @@
   
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
   label { display: block; font-size: 13px; font-weight: 600; color: #3a4256; margin-bottom: 5px; }
-  input[type=text], input[type=number], input[type=date], select {
+  input[type=text], input[type=number], input[type=password], input[type=date], select {
     width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
     font-size: 14px; font-family: inherit; background: #fcfcff;
   }
@@ -146,7 +146,7 @@
 
 <div class="tabbar">
   <button class="tab-btn active" data-view="formView">➕ नवीन मूल्यमापन</button>
-  <button class="tab-btn" data-view="adminView">🔒 केंद्रप्रमुख (डॅशबोर्ड)</button>
+  <button class="tab-btn" data-view="adminView">🔒 मुख्याध्यापक (डॅशबोर्ड)</button>
 </div>
 
 <main>
@@ -225,7 +225,7 @@
     <!-- Lock Screen -->
     <div id="adminLock">
       <div class="rec-card" id="pinSetupCard" style="display:none; max-width:400px; margin:40px auto;">
-        <h3>🔑 केंद्रप्रमुख PIN सेट करा</h3>
+        <h3>🔑 मुख्याध्यापक PIN सेट करा</h3>
         <p class="small-note"> नोंदी पाहणे, PDF काढणे व सिंक करण्यासाठी हा PIN लागेल.</p>
         <label>नवीन PIN (४ अंकी)</label>
         <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="setupPin1" placeholder="PIN">
@@ -246,16 +246,17 @@
     <!-- Admin Content -->
     <div id="adminContent" style="display:none;">
       <div style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
-        <button class="btn-primary btn-sm" data-subview="listView" style="flex:1;">📋 जतन केलेल्या नोंदी</button>
-        <button class="btn-secondary btn-sm" data-subview="settingsView" style="flex:1;">⚙️ Google Sheet सेटिंग्ज</button>
-        <button class="btn-secondary btn-sm" id="adminLogoutBtn">🔓 लॉगआऊट</button>
+        <button class="btn-primary btn-sm" data-subview="listView" style="flex:1;">📋 नोंदी</button>
+        <button class="btn-secondary btn-sm" data-subview="settingsView" style="flex:1;">⚙️ सेटिंग्ज</button>
+        <button class="btn-secondary btn-sm" data-subview="pinView" style="flex:1;">🔑 PIN बदला</button>
+        <button class="btn-secondary btn-sm" id="adminLogoutBtn" style="flex:none;">🔓 लॉगआऊट</button>
       </div>
 
       <!-- Records List -->
       <div class="subview active" id="listView">
         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
           <input type="text" id="searchBox" placeholder="🔍 शाळा किंवा शिक्षकाचे नाव शोधा" style="flex:1; min-width:200px;">
-          <button class="btn-ok btn-sm" id="syncAllBtn">☁️ सर्व प्रलंबित सिंक करा</button>
+          <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white;">☁️ सर्व प्रलंबित सिंक करा</button>
           <button class="btn-secondary btn-sm" id="exportJsonBtn">⬇️ JSON बॅकअप घ्या</button>
         </div>
         <div id="recordsWrap"></div>
@@ -276,13 +277,28 @@
         </div>
       </div>
 
+      <!-- Change PIN -->
+      <div class="subview" id="pinView">
+        <div class="rec-card" style="max-width:400px;">
+          <h3>🔑 PIN बदला</h3>
+          <label>सध्याचा PIN</label>
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="oldPinInput" placeholder="Old PIN">
+          <label>नवीन PIN (४ अंकी)</label>
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="newPinInput1" placeholder="New PIN">
+          <label>नवीन PIN पुन्हा टाका</label>
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="newPinInput2" placeholder="Confirm New PIN">
+          <button class="btn-primary" id="changePinBtn" style="margin-top:15px; width:100%;">PIN बदला</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </main>
 
 <div class="toolbar" id="formToolbar">
-  <button class="btn-secondary" id="resetBtn">🔄 नवीन कोरा फॉर्म</button>
-  <button class="btn-primary" id="saveBtn">💾 ऑफलाइन जतन करा (Save)</button>
+  <button class="btn-secondary" id="resetBtn">🔄 कोरा फॉर्म</button>
+  <button class="btn-primary" id="printLiveBtn">🖨️ PDF काढा</button>
+  <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff;">💾 जतन करा (Save)</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -373,7 +389,7 @@ const competencyData = {
         operations: {
             A: ["२४. ०-९९ बेरीज (बिनहातच्याची).", "२५. ९९ पर्यंत बेरीज (हातच्याची).", "२६. बेरजेची शाब्दिक उदाहरणे.", "२७. ९९ पर्यंत वजाबाकी (बिनहातच्याची).", "२८. ९९ पर्यंत वजाबाकी (हातच्याची).", "२९. वजाबाकीची शाब्दिक उदाहरणे."],
             B: ["१४. ०-२० बेरीज (वस्तू).", "१५. ०-२० बेरीज (चिन्ह).", "१६. ०-२० बेरजेची शाब्दिक उदाहरणे.", "१७. ०-२० वजाबाकी (वस्तू).", "१८. ०-२० वजाबाकी (चिन्ह).", "१९. ०-२० वजाबाकी शाब्दिक.", "२०. ०-५० बेरीज (चिन्ह).", "२१. ०-५० बेरीज शाब्दिक.", "२२. ०-५० वजाबाकी (चिन्ह).", "२३. ०-५० वजाबाकी शाब्दिक."],
-            C: ["१. ०-४ बेरीज करता येत नाही.", "२. ०-४ बेरीज (वस्तू).", "३. ०-४ बेरीज (चिन्ह).", "४. ०-४ बेरजेची शाब्दिक उदाहरणे.", "५. ०-४ वजाबाकी (वस्तू).", "६. ०-४ वजाबाकी (चिन्ह).", "७. ०-४ वजाबाकी शाब्दिक.", "८. ०-९ बेरीज (वस्तू).", "९. ०-९ बेरीज (चिन्ह).", "१०. ०-९ बेरजेची शाब्दिक.", "११. ०-९ वजाबाकी (वस्तू).", "१२. ०-९ वजाबाकी (चिन्ह).", "१३. ०-९ वजाबाकी शाब्दिक."]
+            C: ["१. ०-४ बेरीज करता येत नाही.", "२. ०-४ बेरीज (वस्तू).", "३. ०-४ बेरीज (चिन्ह).", "४. ०-४ बेरजेची शाब्दिक उदाहरणे.", "५. ०-४ वजाबाकी (वस्तू).", "६. ०-४ वजाबाकी (चिन्ह).", "७. ०-४ वजाबाकी शाब्दिक.", "८. ०-९ बेरीज (वस्तू).", "९. ०-९ बेरीज (चिन्ह).", "१०. ०-९ बेरजेची शाब्दिक.", "११. ०-९ वजाबाकी (वस्तू).", "१2. ०-९ वजाबाकी (चिन्ह).", "१३. ०-९ वजाबाकी शाब्दिक."]
         }
     }
 };
@@ -477,19 +493,24 @@ function onTeacherChange() {
 }
 
 function createClassDropdown() {
-    return `<select class="class-dropdown" title="इयत्ता निवडा" onchange="generateSummary()">
-        <option value="">-निवडा-</option>
-        <option value="इयत्ता दुसरी">इयत्ता दुसरी</option>
-        <option value="इयत्ता तिसरी">इयत्ता तिसरी</option>
-        <option value="इयत्ता चौथी">इयत्ता चौथी</option>
-        <option value="इयत्ता पाचवी">इयत्ता पाचवी</option>
-    </select>`;
+    const group = document.getElementById('classSelect').value;
+    let options = '<option value="">-निवडा-</option>';
+    if (group === 'std2') {
+        options += '<option value="इयत्ता दुसरी">इयत्ता दुसरी</option>';
+    } else if (group === 'std3to5') {
+        options += '<option value="इयत्ता तिसरी">इयत्ता तिसरी</option>';
+        options += '<option value="इयत्ता चौथी">इयत्ता चौथी</option>';
+        options += '<option value="इयत्ता पाचवी">इयत्ता पाचवी</option>';
+    }
+    return `<select class="class-dropdown" title="इयत्ता निवडा" onchange="generateSummary()">${options}</select>`;
 }
 
 function generateOptGroup(groupLabel, dataArray, prefix) {
     if (!dataArray) return '';
     let html = `<optgroup label="${groupLabel}">`;
-    dataArray.forEach(text => { html += `<option value="${prefix} - ${text}">${prefix} - ${text.substring(0,40)}...</option>`; });
+    dataArray.forEach(text => { 
+        html += `<option value="${prefix} - ${text}">${prefix} - ${text}</option>`; 
+    });
     html += `</optgroup>`;
     return html;
 }
@@ -688,10 +709,26 @@ document.getElementById('setupPinBtn').addEventListener('click', () => {
 document.getElementById('loginPinBtn').addEventListener('click', attemptLogin);
 function attemptLogin() {
   const p = document.getElementById('loginPinInput').value;
-  if (p === getPin()) { sessionStorage.setItem(SS_AUTH, '1'); document.getElementById('pinError').style.display = 'none'; refreshAdminGate(); }
+  if (p === getPin()) { sessionStorage.setItem(SS_AUTH, '1'); document.getElementById('pinError').style.display = 'none'; showToast('🔓 मुख्याध्यापक पॅनल उघडले.'); refreshAdminGate(); }
   else { document.getElementById('pinError').style.display = 'block'; document.getElementById('loginPinInput').value = ''; }
 }
 document.getElementById('adminLogoutBtn').addEventListener('click', () => { sessionStorage.removeItem(SS_AUTH); document.getElementById('loginPinInput').value=''; refreshAdminGate(); document.querySelector('.tab-btn[data-view="formView"]').click();});
+
+document.getElementById('changePinBtn').addEventListener('click', () => {
+    const old = document.getElementById('oldPinInput').value;
+    const n1 = document.getElementById('newPinInput1').value;
+    const n2 = document.getElementById('newPinInput2').value;
+    
+    if (old !== getPin()) { showToast('सध्याचा PIN चुकीचा आहे.'); return; }
+    if (!/^[0-9]{4}$/.test(n1)) { showToast('नवीन PIN ४ अंकी असावा.'); return; }
+    if (n1 !== n2) { showToast('नवीन PIN जुळत नाहीत.'); return; }
+    
+    setPin(n1);
+    document.getElementById('oldPinInput').value = '';
+    document.getElementById('newPinInput1').value = '';
+    document.getElementById('newPinInput2').value = '';
+    showToast('✅ PIN यशस्वीरित्या बदलला.');
+});
 
 function renderRecords() {
     const wrap = document.getElementById('recordsWrap');
@@ -712,7 +749,7 @@ function renderRecords() {
             <div class="meta">विद्यार्थी संख्या: ${r.students.length}</div>
             <div class="rec-actions">
                 <button class="btn-primary btn-sm" onclick="printRecord('${r._id}')">🖨️ PDF काढा</button>
-                ${!r.synced ? `<button class="btn-ok btn-sm" onclick="syncRecord('${r._id}')">☁️ सिंक</button>` : ''}
+                ${!r.synced ? `<button class="btn-ok btn-sm" onclick="syncRecord('${r._id}')" style="background:#1e8e5a; color:white;">☁️ सिंक</button>` : ''}
                 <button class="btn-danger btn-sm" onclick="deleteRecord('${r._id}')">🗑️ काढा</button>
             </div>
         </div>`;
@@ -738,7 +775,6 @@ function syncRecord(id) {
     const rec = recs.find(r => r._id === id);
     if (!rec) return;
 
-    // Send formatted payload
     fetch(cfg.gsUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(rec) })
     .then(() => {
         rec.synced = true; saveRecords(recs); renderRecords(); showToast('☁️ डेटा सिंक झाला.');
@@ -781,10 +817,7 @@ document.getElementById('scriptCode').value = appsScriptCode;
 /* ============================================================
    PRINT GENERATOR (PERFECT PDF OUTPUT)
    ============================================================ */
-function printRecord(id) {
-    const r = loadRecords().find(x => x._id === id);
-    if (!r) return;
-
+function generatePDFFromData(r) {
     // Build Student Rows for Print
     let tableRows = r.students.map((s, i) => `
         <tr>
@@ -822,15 +855,15 @@ function printRecord(id) {
         th { background-color: #f2f2f2; text-align: center; }
         @media print { button { display: none; } }
     </style></head><body>
-        <h1>निपुण महाराष्ट्र अभियान</h1>
+        <h1>मिशन निपुण बीड</h1>
         <h2>विद्यार्थी मूल्यमापन तक्ता</h2>
         <div class="info-box">
-            <div><b>शाळा:</b> ${r.school}</div>
+            <div><b>शाळा:</b> ${r.school || '-'}</div>
             <div><b>वर्गशिक्षक:</b> ${r.teacher || '-'}</div>
             <div><b>दिनांक:</b> ${r.date || '-'}</div>
             <div><b>केंद्र:</b> ${r.center || '-'}</div>
             <div><b>गट:</b> ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ वी'}</div>
-            <div><b>तालुका / जिल्हा:</b> ${r.taluka} / ${r.district}</div>
+            <div><b>तालुका / जिल्हा:</b> ${r.taluka || '-'} / ${r.district || '-'}</div>
         </div>
         
         <table>
@@ -848,6 +881,21 @@ function printRecord(id) {
     w.document.open(); w.document.write(html); w.document.close();
     setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
 }
+
+function printRecord(id) {
+    const r = loadRecords().find(x => x._id === id);
+    if (!r) return;
+    generatePDFFromData(r);
+}
+
+document.getElementById('printLiveBtn').addEventListener('click', () => {
+    const rec = collectForm();
+    if(!rec.school && !rec.teacher && rec.students.length === 0) {
+        showToast('कृपया आधी माहिती भरा.');
+        return;
+    }
+    generatePDFFromData(rec);
+});
 
 /* Backups */
 document.getElementById('exportJsonBtn').addEventListener('click', () => {
