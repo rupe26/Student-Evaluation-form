@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>निपुण महाराष्ट्र अभियान - विद्यार्थी मूल्यमापन तक्ता</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Header Styles */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .page-header h1 {
+            color: #0056b3;
+            margin: 0;
+            text-align: center;
+            font-size: 26px;
+        }
+        h2, h3 { text-align: center; color: #0056b3; }
+        
+        /* Form Header Styles */
+        .form-header {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .form-group { display: flex; align-items: center; }
+        .form-group label {
+            font-weight: bold;
+            margin-right: 10px;
+            white-space: nowrap;
+            color: #0056b3;
+        }
+        .form-group input, .form-group select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+            gap: 15px;
+        }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end;}
+        select, input[type="text"], input[type="date"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .class-selector { flex: 1; min-width: 250px; }
+        .class-selector select { width: auto; font-size: 16px; font-weight: bold; padding: 8px; }
+        
+        /* Desktop Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed; 
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        th { background-color: #f2f2f2; text-align: center; font-size: 14px; }
+        
+        td select {
+            width: 100%;
+            white-space: normal;
+            word-wrap: break-word;
+            font-size: 11px;
+            cursor: pointer;
+            background-color: #fff;
+            height: auto;
+        }
+        optgroup { font-weight: bold; color: #0056b3; background-color: #f2f2f2; }
+        option { color: #333; background-color: #fff; }
+        
+        /* Button Styles */
+        .btn {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-add { background-color: #28a745; }
+        .btn-add:hover { background-color: #218838; }
+        .btn-download { background-color: #dc3545; }
+        .btn-download:hover { background-color: #c82333; }
+        .btn-save { background-color: #17a2b8; }
+        .btn-save:hover { background-color: #117a8b; }
+        .btn-load { background-color: #fd7e14; }
+        .btn-load:hover { background-color: #e85e0b; }
+        .btn-sync { background-color: #6f42c1; }
+        .btn-sync:hover { background-color: #59339d; }
+        
+        /* Summary Table Styles */
+        .summary-container { margin-top: 30px; background: #e9ecef; padding: 15px; border-radius: 5px; }
+        .summary-table { width: 100%; border-collapse: collapse; background-color: white; }
+        .summary-table th { background-color: #0056b3; color: white; text-align: center; padding: 8px;}
+        .summary-table td { text-align: center; font-size: 15px; font-weight: bold; background-color: white; padding: 8px;}
+        .summary-block { page-break-inside: avoid; margin-bottom: 20px; }
+        .grand-total-block {
+            page-break-inside: avoid; margin-top: 30px; border: 2px solid #28a745;
+            padding: 15px; border-radius: 5px; background-color: #f8fff9;
+        }
+        .grand-total-block th { background-color: #28a745 !important; }
+        .grand-total-block h4 {
+            color: #28a745; border-bottom: 2px solid #28a745; display: inline-block;
+            padding-bottom: 3px; margin-top: 0; margin-bottom: 10px;
+        }
+
+        /* ========================================== */
+        /* 📱 MOBILE RESPONSIVENESS (Data Feeding)   */
+        /* ========================================== */
+        @media (max-width: 850px) {
+            body { margin: 10px; }
+            .container { padding: 10px; }
+            .form-header { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .btn-group { flex-direction: column; justify-content: stretch; width: 100%; }
+            .btn { width: 100%; font-size: 16px; padding: 12px; }
+
+            /* Card-based table for mobile */
+            #evaluationTable thead { display: none; }
+            #evaluationTable, #evaluationTable tbody, #evaluationTable tr, #evaluationTable td {
+                display: block; width: 100%; box-sizing: border-box;
+            }
+            #evaluationTable tr {
+                margin-bottom: 20px;
+                border: 2px solid #0056b3;
+                border-radius: 8px;
+                background: #fff;
+                overflow: hidden;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            #evaluationTable td {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px;
+                border: none;
+                border-bottom: 1px solid #eaeaea;
+            }
+            #evaluationTable td:last-child { border-bottom: none; }
+            #evaluationTable td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #0056b3;
+                margin-bottom: 6px;
+                font-size: 14px;
+            }
+            #evaluationTable td select, #evaluationTable td input {
+                font-size: 14px;
+                padding: 10px;
+                background-color: #f8f9fa;
+                border: 1px solid #ced4da;
+            }
+            td select { white-space: normal; height: auto; }
+        }
+
+        /* ========================================== */
+        /* 🖨️ PDF & PRINT FORMATTING                */
+        /* ========================================== */
+        .print-span { display: none; } /* Hidden normally, used for perfect PDF generation */
+
+        @media print {
+            @page { size: portrait; margin: 8mm; }
+            body { background-color: white; margin: 0; }
+            .container { box-shadow: none; width: 100%; max-width: 100%; padding: 0; }
+            .controls, .no-print, .btn-group { display: none !important; }
+            
+            .page-header h1 { font-size: 20px; color: black !important; margin-bottom: 10px;}
+            .form-header { border: none; background-color: transparent; padding: 0; margin-bottom: 10px; gap: 8px; }
+            .form-group label { font-size: 12px; }
+            
+            /* Print Span styling (replaces inputs) */
+            .print-span {
+                display: block !important;
+                font-size: 10.5px;
+                line-height: 1.3;
+                color: black;
+                white-space: normal;
+                word-wrap: break-word;
+                padding: 2px 0;
+            }
+            .form-group .print-span { border-bottom: 1px dashed #000; flex: 1; padding-left: 5px; font-size: 12px;}
+
+            /* Force standard table layout even if printed from mobile */
+            #evaluationTable, #evaluationTable tbody, #evaluationTable tr, #evaluationTable td {
+                display: table !important; width: 100% !important; box-sizing: border-box !important;
+            }
+            #evaluationTable { display: table !important; margin-bottom: 10px !important; }
+            #evaluationTable thead { display: table-header-group !important; }
+            #evaluationTable tbody { display: table-row-group !important; }
+            #evaluationTable tr { display: table-row !important; border: none !important; box-shadow: none !important; margin: 0 !important; }
+            #evaluationTable th { display: table-cell !important; background-color: #f2f2f2 !important; color: black !important; -webkit-print-color-adjust: exact; padding: 4px; font-size: 11px; }
+            #evaluationTable td { display: table-cell !important; border: 1px solid black !important; padding: 4px !important; text-align: left !important; }
+            #evaluationTable td::before { display: none !important; } /* Hide mobile labels */
+
+            .summary-container, .grand-total-block { background: transparent; padding: 0; border: none; page-break-inside: avoid; }
+            .summary-table th { background-color: #f2f2f2 !important; color: black !important; -webkit-print-color-adjust: exact; font-size: 12px;}
+            .summary-table td { font-size: 12px; }
+            .grand-total-block h4 { color: black !important; border-bottom: 2px solid black !important; font-size: 14px; margin-bottom: 5px;}
+            h3 { font-size: 14px; margin-bottom: 5px;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="page-header">
+        <h1>निपुण महाराष्ट्र अभियान - विद्यार्थी मूल्यमापन तक्ता</h1>
+    </div>
+    
+    <div class="form-header">
+        <div class="form-group">
+            <label>शाळा:-</label>
+            <select id="schoolSelect" onchange="onSchoolChange()"></select>
+        </div>
+        <div class="form-group">
+            <label>वर्गशिक्षक:-</label>
+            <select id="teacherSelect" onchange="onTeacherChange()">
+                <option value="">-- आधी शाळा निवडा --</option>
+            </select>
+        </div>
+        <div class="form-group"><label>दिनांक:-</label><input type="date" id="evalDate"></div>
+        <div class="form-group"><label>केंद्र:-</label><input type="text" id="evalCenter"></div>
+        <div class="form-group"><label>तालुका:-</label><input type="text" id="evalTaluka" value="अंबाजोगाई"></div>
+        <div class="form-group"><label>जिल्हा:-</label><input type="text" id="evalDistrict" value="बीड"></div>
+    </div>
+
+    <div class="controls no-print">
+        <div class="class-selector">
+            <label for="classSelect"><strong>मूल्यमापन गट:</strong> </label>
+            <select id="classSelect" onchange="updateClass()">
+                <option value="std2">इयत्ता २ री</option>
+                <option value="std3to5">इयत्ता ३ री ते ५ वी</option>
+            </select>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-add" onclick="addRow()">+ विद्यार्थी जोडा</button>
+            <button class="btn btn-save" onclick="saveDataOffline()">💾 ऑफलाइन सेव्ह</button>
+            <button class="btn btn-load" onclick="loadDataOffline()">📂 डेटा उघडा</button>
+            <button class="btn btn-sync" onclick="syncToSheet()">☁️ Google Sheet सिंक</button>
+            <button class="btn btn-download" onclick="downloadPDF()">📥 PDF डाउनलोड</button>
+        </div>
+    </div>
+
+    <h3 id="tableSubtitle">इयत्ता २ री | विषय क्षेत्रेः वाचन, लेखन, संख्याज्ञान, गणितीय क्रिया</h3>
+
+    <table id="evaluationTable">
+        <thead>
+            <tr>
+                <th style="width: 4%;">अ. क्र.</th>
+                <th style="width: 14%;">विद्यार्थ्याचे नाव</th>
+                <th style="width: 8%;">इयत्ता</th>
+                <th style="width: 18.5%;">वाचन गट (A/B/C)</th>
+                <th style="width: 18.5%;">लेखन गट (A/B/C)</th>
+                <th style="width: 18.5%;">संख्याज्ञान गट (A/B/C)</th>
+                <th style="width: 18.5%;">गणितीय क्रिया गट (A/B/C)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Rows injected via JS -->
+        </tbody>
+    </table>
+
+    <div class="summary-container" id="summaryBox">
+        <h3 style="margin-top: 0; text-align: center; color: #0056b3;">वर्गनिहाय समारोप (Class-wise Summary)</h3>
+        <div id="summaryContent"></div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // CONFIGURATION VARIABLES
+    // ==========================================
+    const HM_ADMIN_PIN = "1234"; // Set your Headmaster Admin PIN here
+    const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE"; 
+
+    let rowCount = 0;
+
+    const schoolList = [
+        { code: "27270101612", name: "सी.पी.एस. रविवार पेठ" },
+        { code: "27270101613", name: "जि.प.प्रा.शा. क्र. २, अंबाजोगाई" },
+        { code: "27270102401", name: "जि.प.प्रा.शा. साकुड (मराठी)" },
+        { code: "27270102404", name: "जि.प.प्रा.शा. साकुड (उर्दू)" },
+        { code: "27270102501", name: "जि.प.प्रा.शा. काळवटी तांडा क्र. १" },
+        { code: "27270102502", name: "जि.प.प्रा.शा. काळवटी तांडा क्र. ३" },
+        { code: "27270102503", name: "जि.प.प्रा.शा. भीमाई वस्ती" },
+        { code: "27270102601", name: "जि.प.प्रा.शा. काळवटी तांडा क्र. २" },
+        { code: "27270102701", name: "जि.प.प्रा.शा. मांडवा पठाण" },
+        { code: "27270102801", name: "जि.प.प्रा.शा. मांडवा तांडा" },
+        { code: "27270102901", name: "जि.प.प्रा.शा. पोलेवाडी" },
+        { code: "27270103001", name: "जि.प.प्रा.शा. नागझरी वसाहत" },
+        { code: "27270103101", name: "जि.प.प्रा.शा. शेपवाडी" },
+        { code: "27270103102", name: "जि.प.प्रा.शा. सह्याद्री नगर शेपवाडी" },
+        { code: "27270103201", name: "जि.प.प्रा.शा. पिंपळा धायगुडा (मराठी)" },
+        { code: "27270103203", name: "जि.प.प्रा.शा. पिंपळा धायगुडा (उर्दू)" },
+        { code: "27270103301", name: "जि.प.प्रा.शा. वरवटी" },
+        { code: "27270103303", name: "जि.प.प्रा.शा. उघडे वस्ती (वरवटी)" },
+        { code: "27270103401", name: "जि.प.प्रा.शा. तलाव पाटी" },
+        { code: "27270103501", name: "जि.प.प्रा.शा. अंबलवाडी" },
+        { code: "27270103502", name: "जि.प.प्रा.शा. गोल्टावस्ती" },
+        { code: "27270103701", name: "जि.प.प्रा.शा. गिरवली आपेट" },
+        { code: "27270103801", name: "जि.प.हा.स्कू. गिरवली" }
+    ];
+
+    const teacherData = {
+        "सी.पी.एस. रविवार पेठ": [
+            { name: "उषाताई नारायण चव्हाण", designation: "प्राथमिक शिक्षक", mobile: "9422929990" },
+            { name: "रेखा सुखदेव बनसोडे", designation: "पदवीधर शिक्षक", mobile: "9767539553" },
+            { name: "इंद्रजित शिवाजीराव डांगे", designation: "प्राथमिक शिक्षक", mobile: "9403023319" },
+            { name: "रुपेश पांडुरंग लोंढे", designation: "केंद्र समन्वयक", mobile: "7066100281" },
+            { name: "पुरुषोत्तम संभाप्पा रुद्राक्ष", designation: "विशेष शिक्षक", mobile: "7588566554" }
+        ],
+        "जि.प.प्रा.शा. क्र. २, अंबाजोगाई": [
+            { name: "बालासाहेब रामराव सोनवणे", designation: "प्राथमिक शिक्षक", mobile: "9403608550" },
+            { name: "बळीराम शिवदास आकुसकर", designation: "प्राथमिक शिक्षक", mobile: "9011999904" }
+        ],
+        "जि.प.प्रा.शा. साकुड (मराठी)": [
+            { name: "अंगद कोंडीबा घुले", designation: "प्राथमिक शिक्षक", mobile: "9822373937" },
+            { name: "सुर्यवंशी सविता जगन्नाथ", designation: "सहशिक्षक", mobile: "9403646485" },
+            { name: "लव्हारे सुरेखा तुकाराम", designation: "सहशिक्षक", mobile: "9822576718" },
+            { name: "आघाव सुरेखा प्रल्हाद", designation: "सहशिक्षक", mobile: "9881655787" },
+            { name: "जाधव छाया मधुकर", designation: "सहशिक्षक", mobile: "9421480353" },
+            { name: "तोडकर माधुरी मुरली", designation: "सहशिक्षक", mobile: "8788833061" },
+            { name: "गायके शिल्पा तात्यासाहेब", designation: "सहशिक्षक", mobile: "7588934345" },
+            { name: "मुंडे मंगल विश्वनाथ", designation: "सहशिक्षक", mobile: "-" },
+            { name: "राठोड विनायक घुगू", designation: "सहशिक्षक", mobile: "-" }
+        ],
+        "जि.प.प्रा.शा. साकुड (उर्दू)": [
+            { name: "मोहम्मदगौसमोहिउद्दीन फकीरमोहम्मद शेख", designation: "पदवीधर शिक्षक", mobile: "9423170486" },
+            { name: "रेश्मा बेगम तुफैल अहमद खान पठाण", designation: "पदवीधर शिक्षक", mobile: "8788220923" },
+            { name: "तरन्नुम अहमद अली सय्यद", designation: "प्राथमिक शिक्षक", mobile: "8668338554" },
+            { name: "अहमदी बेगम अब्दुल शुकुर साहेब फारुकी", designation: "प्राथमिक शिक्षक", mobile: "9975082007" },
+            { name: "फारुकी शहेबाज सादेक", designation: "पदवीधर शिक्षक", mobile: "9420432681" },
+            { name: "आरिफ अहमद अब्दुल रशीद शेख", designation: "प्राथमिक शिक्षक", mobile: "9405292799" },
+            { name: "सबीहानाझ जमील अहमद सिद्दीकी", designation: "प्राथमिक शिक्षक", mobile: "8007128724" },
+            { name: "अयुब कलीम सय्यद", designation: "प्राथमिक शिक्षक", mobile: "8605825544" }
+        ],
+        "जि.प.प्रा.शा. काळवटी तांडा क्र. १": [
+            { name: "कमल गंगाधर चिखले", designation: "प्राथमिक शिक्षक", mobile: "9422082541" },
+            { name: "प्रभू बाबुराव खोडवे", designation: "प्राथमिक शिक्षक", mobile: "9764569825" },
+            { name: "उत्तम बाबुराव डोंगरे", designation: "प्राथमिक शिक्षक", mobile: "9689008389" }
+        ],
+        "जि.प.प्रा.शा. काळवटी तांडा क्र. २": [
+            { name: "संजय हणमंतराव कचकलवार", designation: "प्राथमिक शिक्षक", mobile: "9284746414" },
+            { name: "पूनम किसन लेंगरे", designation: "प्राथमिक शिक्षक", mobile: "7798661934" }
+        ],
+        "जि.प.प्रा.शा. काळवटी तांडा क्र. ३": [
+            { name: "मंजुषा भीमाशंकर जिडगे", designation: "प्राथमिक शिक्षक", mobile: "9561941714" },
+            { name: "नंदकुमार नामदेव सूर्यवंशी", designation: "प्राथमिक शिक्षक", mobile: "9307856717" }
+        ],
+        "जि.प.प्रा.शा. गिरवली आपेट": [
+            { name: "अर्जुन सूर्यकांत चव्हाण", designation: "प्राथमिक शिक्षक", mobile: "9763737062" },
+            { name: "सुनिल आनंदराव फुलेवार", designation: "प्राथमिक शिक्षक", mobile: "9423733945" }
+        ],
+        "जि.प.प्रा.शा. गोल्टावस्ती": [
+            { name: "सुरेखा अभिमान गालफाडे", designation: "प्राथमिक शिक्षक", mobile: "8999330431" },
+            { name: "शालन नागनाथ जोगदंड", designation: "प्राथमिक शिक्षक", mobile: "9763233793" }
+        ],
+        "जि.प.प्रा.शा. तलाव पाटी": [
+            { name: "मनीषा धोंडोपंत चिंचोलीकर", designation: "प्राथमिक शिक्षक", mobile: "9420194266" },
+            { name: "श्रीदेवी मनोहर सिरसाट", designation: "प्राथमिक शिक्षक", mobile: "8999773919" }
+        ],
+        "जि.प.प्रा.शा. नागझरी वसाहत": [
+            { name: "संतोष माणिकराव गिते", designation: "प्राथमिक शिक्षक", mobile: "7588635356" },
+            { name: "बालासाहेब व्यंकटराव कातळे", designation: "प्राथमिक शिक्षक", mobile: "8999022483" }
+        ],
+        "जि.प.प्रा.शा. पिंपळा धायगुडा (उर्दू)": [
+            { name: "सय्यदा हिना सय्यद सरफराजोद्दीन", designation: "पदवीधर शिक्षक", mobile: "8600504215" },
+            { name: "दायमी सय्यदा नुरुलहुदा अमीरोद्दीन", designation: "पदवीधर शिक्षक", mobile: "9028704480" },
+            { name: "खालीद हसनसाब सय्यद", designation: "प्राथमिक शिक्षक", mobile: "8766734554" },
+            { name: "गौसिया बेगम अब्दुल अजीज शेख", designation: "प्राथमिक शिक्षक", mobile: "9579165068" }
+        ],
+        "जि.प.प्रा.शा. पिंपळा धायगुडा (मराठी)": [
+            { name: "भैय्यासाहेब तुकाराम जोगदंड", designation: "प्राथमिक शिक्षक", mobile: "8888959458" },
+            { name: "प्रीती सुभाषचंद्र साहू", designation: "प्राथमिक शिक्षक", mobile: "9422610375" },
+            { name: "संजीव कचरू उमाप", designation: "पदवीधर शिक्षक", mobile: "9284023434" },
+            { name: "गंगू मुरलीधर झाडे", designation: "पदवीधर शिक्षक", mobile: "8806269056" },
+            { name: "सुरेखा उमाकांत हिशोबे", designation: "प्राथमिक शिक्षक", mobile: "7588114545" },
+            { name: "ज्योतीराम कोंडीबा कोल्हापुरे", designation: "प्राथमिक शिक्षक", mobile: "9850275947" },
+            { name: "सीमा सखारामराव कदम", designation: "प्राथमिक शिक्षक", mobile: "9422329924" },
+            { name: "विलास रामराव माचवे", designation: "प्राथमिक शिक्षक", mobile: "9423893494" }
+        ],
+        "जि.प.प्रा.शा. पोलेवाडी": [
+            { name: "राजेसाहेब वैजनाथराव सोमवंशी", designation: "प्राथमिक शिक्षक", mobile: "7020708970" },
+            { name: "सचिन नारायण गायकवाड", designation: "प्राथमिक शिक्षक", mobile: "9637757982" }
+        ],
+        "जि.प.प्रा.शा. भीमाई वस्ती": [
+            { name: "वंदना तुकाराम उजगरे", designation: "प्राथमिक शिक्षक", mobile: "9552983384" },
+            { name: "वैजनाथ आबासाहेब गडदे", designation: "प्राथमिक शिक्षक", mobile: "9421168755" }
+        ],
+        "जि.प.प्रा.शा. मांडवा तांडा": [
+            { name: "पंचशीला मधुकर साळवी", designation: "प्राथमिक शिक्षक", mobile: "9503685010" },
+            { name: "संजय ज्ञानोबा पाडोळे", designation: "प्राथमिक शिक्षक", mobile: "7020929833" }
+        ],
+        "जि.प.प्रा.शा. मांडवा पठाण": [
+            { name: "मनीषा रत्नलिंग बिडवे", designation: "प्राथमिक शिक्षक", mobile: "7875865244" },
+            { name: "बापूराव राघुआप्पा धारेकर", designation: "प्राथमिक शिक्षक", mobile: "7020752753" },
+            { name: "सुरेश नामदेव निपाणीकर", designation: "पदवीधर शिक्षक", mobile: "9423469937" }
+        ],
+        "जि.प.प्रा.शा. वरवटी": [
+            { name: "ज्योतीबाई देवीदासराव शिंदे", designation: "प्राथमिक शिक्षक", mobile: "9403645467" },
+            { name: "श्री सायस साखरोबा गर्जे", designation: "प्राथमिक शिक्षक", mobile: "9561858811" }
+        ],
+        "जि.प.प्रा.शा. उघडे वस्ती (वरवटी)": [
+            { name: "रविकांत सुधाकरराव खेपकर", designation: "प्राथमिक शिक्षक", mobile: "9623520793" },
+            { name: "शोभा अंगदराव चाटे", designation: "प्राथमिक शिक्षक", mobile: "8999768368" }
+        ],
+        "जि.प.प्रा.शा. अंबलवाडी": [
+            { name: "नवतीला रामराव जाधव", designation: "प्राथमिक शिक्षक", mobile: "7498239099" },
+            { name: "भगवान आश्रुबा बिल्पे", designation: "पदवीधर शिक्षक", mobile: "9604572196" },
+            { name: "आनंद पांडुरंग सिरसाट", designation: "पदवीधर शिक्षक", mobile: "9850940078" },
+            { name: "रुक्मिणी हरिश्चंद्र दाभाडे", designation: "प्राथमिक शिक्षक", mobile: "7588342321" }
+        ],
+        "जि.प.प्रा.शा. शेपवाडी": [
+            { name: "वैशाली विजय बुरांडे", designation: "पदवीधर शिक्षक", mobile: "9405644999" },
+            { name: "आशालता मनोहरराव लांब", designation: "प्राथमिक शिक्षक", mobile: "7719015759" },
+            { name: "शैलजा उत्तमराव जोशी", designation: "प्राथमिक शिक्षक", mobile: "9403882075" },
+            { name: "प्रशांत मारुतीराव बिरादार", designation: "प्राथमिक शिक्षक", mobile: "9421328701" }
+        ],
+        "जि.प.प्रा.शा. सह्याद्री नगर शेपवाडी": [
+            { name: "मीनाक्षी प्रकाश लवटे", designation: "प्राथमिक शिक्षक", mobile: "9823340660" },
+            { name: "अनिता सदाशिव नखाते", designation: "प्राथमिक शिक्षक", mobile: "9403356595" }
+        ]
+    };
+
+    const competencyData = {
+        std2: {
+            reading: {
+                A: [
+                    "११. परिचित मजकूरातील ३-५ सोप्या शब्दांनी व तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह, आरोह अवरोहासह व योग्य गतीने वाचतो.",
+                    "१२. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.",
+                    "१३. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो.",
+                    "१४. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह, आरोह अवरोहासह व योग्य गतीने वाचतो."
+                ],
+                B: [
+                    "५. मजकूरातील साध्या विरामचिन्हांची दखल घेतो.",
+                    "६. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.",
+                    "७. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो.",
+                    "८. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह वाचतो.",
+                    "९. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.",
+                    "१०. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो."
+                ],
+                C: [
+                    "१. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी (उच्चार) ओळखत नाही.",
+                    "२. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी (उच्चार) ओळखतो.",
+                    "३. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे दोन अक्षरी शब्द वाचतो.",
+                    "४. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे तीन ते चार अक्षरी शब्द वाचतो."
+                ]
+            },
+            writing: {
+                A: [
+                    "१२. २-३ सोप्या शब्दांची दोन ते तीन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.",
+                    "१३. २-३ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त विरामचिन्हांसह तीन ते चार वाक्ये ऐकून लिहितो.",
+                    "१४. श्रुतलेखनाकरिता ४-५ शब्दांची एक ते दोन सोपी वाक्ये योग्य गतीने लिहितो.",
+                    "१५. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त एक वाक्य विरामचिन्हांसह ऐकून लिहितो.",
+                    "१६. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त २-३ वाक्ये विरामचिन्हांसह योग्य गतीने लिहितो."
+                ],
+                B: [
+                    "६. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.",
+                    "७. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे, स्वरचिन्हेयुक्त व जोडाक्षरयुक्त शब्द लिहितो.",
+                    "८. २-३ शब्दांची व सोप्या जोडाक्षरांची एक ते दोन सोपी वाक्ये पाहून लिहितो.",
+                    "९. ४-५ सोपे शब्द व सोपी जोडाक्षरे असलेली दोन ते तीन वाक्ये पाहून लिहितो.",
+                    "१०. २-३ शब्दांची एक ते दोन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.",
+                    "११. २-३ शब्द व जोडाक्षरयुक्त एक ते दोन वाक्ये ऐकून विरामचिन्हांसह योग्य गतीने लिहितो."
+                ],
+                C: [
+                    "१. वर्णमालेतील अक्षरे पाहून लिहू शकत नाही.",
+                    "२. वर्णमालेतील अक्षरे पाहून लिहितो.",
+                    "३. सोपे शब्द पाहून लिहितो.",
+                    "४. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरांच्या ध्वनीला ऐकून अक्षरे लिहितो.",
+                    "५. श्रुतलेखन करताना वर्णमालेतील काही अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो."
+                ]
+            },
+            numeracy: {
+                A: [
+                    "९. २० पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो.",
+                    "१०. १० ते २० पर्यंतच्या संख्या ओळखतो/वाचतो.",
+                    "११. १० ते २० पर्यंत संख्या लिहितो. (अंकी)"
+                ],
+                B: [
+                    "५. ० ते ९ पर्यंतच्या संख्या ओळखतो/वाचतो.",
+                    "६. ० ते ९ पर्यंत संख्या लिहितो. (अंकी)",
+                    "७. १० ते २० संख्यानामे क्रमाने म्हणतो.",
+                    "८. १० ते २० पर्यंतच्या वस्तू मोजतो."
+                ],
+                C: [
+                    "१. ० ते ९ संख्यानामे क्रमाने म्हणता येत नाहीत.",
+                    "२. ० ते ९ संख्यानामे क्रमाने म्हणतो.",
+                    "३. ० ते ९ पर्यंतच्या वस्तू मोजतो.",
+                    "४. ९ पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो."
+                ]
+            },
+            operations: {
+                A: [
+                    "११. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.",
+                    "१२. ० ते ९ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "१३. ० ते ९ पर्यंतच्या संख्यांचा वापर दैनंदिन परिस्थितीमध्ये करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."
+                ],
+                B: [
+                    "५. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरजेची उदाहरणे सोडवितो.",
+                    "६. ० ते ९ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "७. ० ते ९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "८. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकीची उदाहरणे सोडवितो.",
+                    "९. ० ते ४ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "१०. ० ते ४ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."
+                ],
+                C: [
+                    "१. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करता येत नाही.",
+                    "२. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.",
+                    "३. ० ते ४ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "४. ० ते ४ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो."
+                ]
+            }
+        },
+        std3to5: {
+            reading: {
+                A: [
+                    "१२. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये वाचतो.",
+                    "१३. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह आकलनासह वाचतो.",
+                    "१४. अपरिचित मजकूरातील ६-८ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये वाचतो.",
+                    "१५. अपरिचित मजकूरातील ६-८ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये अचूकपणे, आकलनासह वाचतो."
+                ],
+                B: [
+                    "६. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.",
+                    "७. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली व जोडाक्षरासह लहान वाक्ये वाचतो.",
+                    "८. परिचित मजकूरातील २-३ सोप्या शब्दांनी व जोडाक्षरासह लहान वाक्ये अचूकपणे, आकलनासह वाचतो.",
+                    "९. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.",
+                    "१०. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली जोडाक्षर युक्त लहान वाक्ये वाचतो.",
+                    "११. परिचित मजकूरातील ३-५ सोप्या शब्दांनी व जोडाक्षरासह लहान वाक्ये अचूकपणे, आकलनासह वाचतो."
+                ],
+                C: [
+                    "१. वर्णमालेतील काही अक्षरे व संबंधित ध्वनी ओळखत नाही.",
+                    "२. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी ओळखतो.",
+                    "३. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे दोन अक्षरी शब्द वाचतो.",
+                    "४. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे तीन ते चार अक्षरी शब्द वाचतो.",
+                    "५. मजकूरातील साध्या विरामचिन्हांची दखल घेतो."
+                ]
+            },
+            writing: {
+                A: [
+                    "१४. श्रुतलेखनाकरिता ४-५ शब्दांची एक ते दोन सोपी वाक्ये योग्य गतीने लिहितो.",
+                    "१५. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त एक वाक्य विरामचिन्हांसह व आकलनासह ऐकून लिहितो.",
+                    "१६. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त दोन ते तीन वाक्ये विरामचिन्हांसह ऐकून लिहितो.",
+                    "१७. ६-८ शब्दांची चार ते पाच सोपी वाक्ये ऐकून लिहितो.",
+                    "१८. श्रुतलेखनाकरिता ६-८ शब्द व जोडाक्षरे यांनी युक्त ४-५ वाक्ये विरामचिन्हांसह व आकलनासह लिहितो."
+                ],
+                B: [
+                    "८. २-३ शब्दांची व सोप्या जोडाक्षरांची एक ते दोन सोपी वाक्ये पाहून लिहितो.",
+                    "९. ४-५ सोपे शब्द व सोपी जोडाक्षरे असलेली दोन ते तीन वाक्ये आकलनासह पाहून लिहितो.",
+                    "१०. २-३ शब्दांची एक ते दोन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.",
+                    "११. २-३ शब्द व जोडाक्षरयुक्त एक ते दोन वाक्य विरामचिन्हांसह व आकलनासह ऐकून लिहितो.",
+                    "१२. २-३ सोप्या शब्दांची दोन ते तीन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.",
+                    "१३. २-३ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त विरामचिन्हांसह व आकलनासह ३-४ वाक्ये ऐकून लिहितो."
+                ],
+                C: [
+                    "१. वर्णमालेतील अक्षरे पाहून लिहू शकत नाही.",
+                    "२. वर्णमालेतील अक्षरे पाहून लिहितो.",
+                    "३. सोपे शब्द पाहून लिहितो.",
+                    "४. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरांच्या ध्वनीला ऐकून अक्षरे लिहितो.",
+                    "५. श्रुतलेखन करताना वर्णमालेतील काही अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.",
+                    "६. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.",
+                    "७. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे, स्वरचिन्हयुक्त व जोडाक्षरयुक्त शब्द लिहितो."
+                ]
+            },
+            numeracy: {
+                A: [
+                    "१८. ० ते ९ संख्यानामे लिहितो. (अक्षरी)",
+                    "१९. ० ते २० संख्यानामे लिहितो. (अक्षरी)",
+                    "२०. ० ते ५० संख्यानामे लिहितो. (अक्षरी)"
+                ],
+                B: [
+                    "१०. १० ते २० पर्यंतच्या संख्या ओळखतो/वाचतो.",
+                    "११. १० ते २० पर्यंत संख्या लिहितो. (अंकी)",
+                    "१२. २१ ते ५० पर्यंतची संख्यानामे क्रमाने म्हणतो.",
+                    "१३. स्थानिक किंमत संकल्पना वापरून २१ ते ५० पर्यंतच्या संख्या ओळखतो/वाचतो.",
+                    "१४. २१ ते ५० पर्यंतच्या संख्या लिहितो. (अंकी)",
+                    "१५. ५१ ते ९९ पर्यंतची संख्यानामे क्रमाने म्हणतो.",
+                    "१६. स्थानिक किंमत संकल्पना वापरून ५१ ते ९९ पर्यंतच्या संख्या ओळखतो.",
+                    "१७. ५१ ते ९९ पर्यंतच्या संख्या लिहितो. (अंकी)"
+                ],
+                C: [
+                    "१. ० ते ९ संख्यानामे क्रमाने म्हणता येत नाहीत.",
+                    "२. ० ते ९ संख्यानामे क्रमाने म्हणतो.",
+                    "३. ० ते ९ पर्यंतच्या वस्तू मोजतो.",
+                    "४. ९ पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो.",
+                    "५. ० ते ९ पर्यंतच्या संख्या ओळखतो/वाचतो.",
+                    "६. ० ते ९ पर्यंत संख्या लिहितो. (अंकी)",
+                    "७. १० ते २० संख्यानामे क्रमाने म्हणतो.",
+                    "८. १० ते २० पर्यंतच्या वस्तू मोजतो.",
+                    "९. २० पर्यंतच्या वस्तूच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो."
+                ]
+            },
+            operations: {
+                A: [
+                    "२४. स्थानिक किमत संकल्पना वापरून ० ते ९९ पर्यंतच्या संख्यांची बेरीज करतो. (बिनहातच्याची)",
+                    "२५. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची बेरीज करतो. (हातच्याची)",
+                    "२६. ० ते ९९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "२७. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (बिनहातच्याची)",
+                    "२८. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (हातच्याची)",
+                    "२९. ९९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."
+                ],
+                B: [
+                    "१४. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.",
+                    "१5. ० ते २० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "१६. ० ते २० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "१७. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.",
+                    "१८. ० ते २० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "१९. ० ते २० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.",
+                    "२०. ० ते ५० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "२१. ० ते ५० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "२२. ० ते ५० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "२३. ० ते ५० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."
+                ],
+                C: [
+                    "१. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करता येत नाही.",
+                    "२. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.",
+                    "३. ० ते ४ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "४. ० ते ४ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "५. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.",
+                    "६. ० ते ४ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "७. ० ते ४ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.",
+                    "८. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरजेची उदाहरणे सोडवितो.",
+                    "९. ० ते ९ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.",
+                    "१०. ० ते ९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.",
+                    "११. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.",
+                    "१२. ० ते ९ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.",
+                    "१३. ० ते ९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."
+                ]
+            }
+        }
+    };
+
+    function populateSchoolDropdown() {
+        const sel = document.getElementById('schoolSelect');
+        sel.innerHTML = '<option value="">-- शाळा निवडा --</option>';
+        schoolList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name;
+            opt.textContent = `${s.name} (${s.code})`;
+            sel.appendChild(opt);
+        });
+        const otherOpt = document.createElement('option');
+        otherOpt.value = "__other__";
+        otherOpt.textContent = "इतर (यादीत नसल्यास)";
+        sel.appendChild(otherOpt);
+    }
+    
+    function onSchoolChange() {
+        const sel = document.getElementById('schoolSelect');
+        if (sel.value === "__other__") {
+            const customName = prompt("शाळेचे नाव टाका:");
+            if (customName) {
+                const opt = document.createElement('option');
+                opt.value = customName;
+                opt.textContent = customName;
+                sel.insertBefore(opt, sel.lastElementChild);
+                sel.value = customName;
+            } else { sel.value = ""; }
+        }
+        populateTeacherDropdown(sel.value);
+    }
+    
+    function populateTeacherDropdown(schoolName) {
+        const sel = document.getElementById('teacherSelect');
+        sel.innerHTML = '';
+        if (!schoolName) {
+            sel.innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
+            return;
+        }
+        const teachers = teacherData[schoolName];
+        if (!teachers || teachers.length === 0) {
+            sel.innerHTML = '<option value="">-- या शाळेसाठी शिक्षक यादी उपलब्ध नाही --</option>';
+            const otherOpt = document.createElement('option');
+            otherOpt.value = "__other_teacher__";
+            otherOpt.textContent = "इतर (नाव टाका)";
+            sel.appendChild(otherOpt);
+            return;
+        }
+        sel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
+        teachers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = `${t.name} (${t.designation})`;
+            sel.appendChild(opt);
+        });
+        const otherOpt = document.createElement('option');
+        otherOpt.value = "__other_teacher__";
+        otherOpt.textContent = "इतर (यादीत नसल्यास)";
+        sel.appendChild(otherOpt);
+    }
+    
+    function onTeacherChange() {
+        const sel = document.getElementById('teacherSelect');
+        if (sel.value === "__other_teacher__") {
+            const customName = prompt("शिक्षकाचे नाव टाका:");
+            if (customName) {
+                const opt = document.createElement('option');
+                opt.value = customName;
+                opt.textContent = customName;
+                sel.insertBefore(opt, sel.lastElementChild);
+                sel.value = customName;
+            } else { sel.value = ""; }
+        }
+    }
+
+    function updateClass() {
+        const selectedClass = document.getElementById('classSelect').value;
+        let title = selectedClass === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी';
+        document.getElementById('tableSubtitle').innerText = title + ' | विषय क्षेत्रेः वाचन, लेखन, संख्याज्ञान, गणितीय क्रिया';
+        document.getElementById('tableBody').innerHTML = '';
+        rowCount = 0;
+        for(let i=0; i<10; i++) { addRow(); }
+        generateSummary();
+    }
+
+    function createClassDropdown() {
+        return `<select class="class-dropdown" title="इयत्ता निवडा">
+            <option value="">-निवडा-</option>
+            <option value="इयत्ता दुसरी">इयत्ता दुसरी</option>
+            <option value="इयत्ता तिसरी">इयत्ता तिसरी</option>
+            <option value="इयत्ता चौथी">इयत्ता चौथी</option>
+            <option value="इयत्ता पाचवी">इयत्ता पाचवी</option>
+        </select>`;
+    }
+
+    function generateOptGroup(groupLabel, dataArray, prefix) {
+        if (!dataArray) return '';
+        let html = `<optgroup label="${groupLabel}">`;
+        dataArray.forEach(text => {
+            html += `<option value="${prefix} - ${text}" title="${prefix} - ${text}">${prefix} - ${text}</option>`;
+        });
+        html += `</optgroup>`;
+        return html;
+    }
+
+    function createDropdown(subject) {
+        const selectedClass = document.getElementById('classSelect').value;
+        const optionsData = competencyData[selectedClass][subject];
+        let html = `<select class="competency-select" data-subject="${subject}" title="क्षमता निवडण्यासाठी क्लिक करा">`;
+        html += `<option value="">-- क्षमता निवडा --</option>`;
+        html += generateOptGroup("गट A (प्रगत स्तर)", optionsData.A, "A");
+        html += generateOptGroup("गट B (मध्यम स्तर)", optionsData.B, "B");
+        html += generateOptGroup("गट C (आरंभिक स्तर)", optionsData.C, "C");
+        html += `</select>`;
+        return html;
+    }
+
+    function addRow() {
+        rowCount++;
+        const tbody = document.getElementById('tableBody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td data-label="अ. क्र." style="text-align:center;">${rowCount}</td>
+            <td data-label="विद्यार्थ्याचे नाव"><input type="text" class="student-name" placeholder="विद्यार्थ्याचे नाव"></td>
+            <td data-label="इयत्ता">${createClassDropdown()}</td>
+            <td data-label="वाचन गट (A/B/C)">${createDropdown('reading')}</td>
+            <td data-label="लेखन गट (A/B/C)">${createDropdown('writing')}</td>
+            <td data-label="संख्याज्ञान गट (A/B/C)">${createDropdown('numeracy')}</td>
+            <td data-label="गणितीय क्रिया गट">${createDropdown('operations')}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function generateSummary() {
+        const classes = ["इयत्ता दुसरी", "इयत्ता तिसरी", "इयत्ता चौथी", "इयत्ता पाचवी"];
+        const counts = {};
+        const grandTotal = { reading: {A:0,B:0,C:0}, writing: {A:0,B:0,C:0}, numeracy: {A:0,B:0,C:0}, operations: {A:0,B:0,C:0} };
+        
+        classes.forEach(cls => { counts[cls] = { reading:{A:0,B:0,C:0}, writing:{A:0,B:0,C:0}, numeracy:{A:0,B:0,C:0}, operations:{A:0,B:0,C:0} }; });
+
+        const rows = document.querySelectorAll('#tableBody tr');
+        const classesPresent = new Set();
+
+        rows.forEach(row => {
+            const classSelect = row.querySelector('.class-dropdown').value;
+            if (!classSelect) return; 
+            classesPresent.add(classSelect);
+            
+            const selects = row.querySelectorAll('.competency-select');
+            selects.forEach(select => {
+                const subject = select.getAttribute('data-subject');
+                const val = select.value;
+                if (val.startsWith('A')) { counts[classSelect][subject].A++; grandTotal[subject].A++; }
+                else if (val.startsWith('B')) { counts[classSelect][subject].B++; grandTotal[subject].B++; }
+                else if (val.startsWith('C')) { counts[classSelect][subject].C++; grandTotal[subject].C++; }
+            });
+        });
+
+        let summaryHTML = '';
+        classes.forEach(cls => {
+            if (classesPresent.has(cls)) {
+                const c = counts[cls];
+                summaryHTML += `
+                    <div class="summary-block">
+                        <h4 style="margin-bottom: 8px; color: #0056b3; border-bottom: 2px solid #0056b3; display: inline-block; padding-bottom: 3px;">${cls}</h4>
+                        <table class="summary-table">
+                            <thead><tr><th style="width: 20%;">विषय</th><th style="width: 20%;">गट A (प्रगत)</th><th style="width: 20%;">गट B (मध्यम)</th><th style="width: 20%;">गट C (आरंभिक)</th><th style="width: 20%;">एकूण नोंदणी</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>वाचन</strong></td><td>${c.reading.A}</td><td>${c.reading.B}</td><td>${c.reading.C}</td><td>${c.reading.A+c.reading.B+c.reading.C}</td></tr>
+                                <tr><td><strong>लेखन</strong></td><td>${c.writing.A}</td><td>${c.writing.B}</td><td>${c.writing.C}</td><td>${c.writing.A+c.writing.B+c.writing.C}</td></tr>
+                                <tr><td><strong>संख्याज्ञान</strong></td><td>${c.numeracy.A}</td><td>${c.numeracy.B}</td><td>${c.numeracy.C}</td><td>${c.numeracy.A+c.numeracy.B+c.numeracy.C}</td></tr>
+                                <tr><td><strong>गणितीय क्रिया</strong></td><td>${c.operations.A}</td><td>${c.operations.B}</td><td>${c.operations.C}</td><td>${c.operations.A+c.operations.B+c.operations.C}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        });
+
+        if (summaryHTML !== '') {
+            const gt = grandTotal;
+            summaryHTML += `
+                <div class="grand-total-block">
+                    <h4>सर्व इयत्तांचा एकूण समारोप (Grand Total)</h4>
+                    <table class="summary-table">
+                        <thead><tr><th style="width: 20%;">विषय</th><th style="width: 20%;">गट A (प्रगत)</th><th style="width: 20%;">गट B (मध्यम)</th><th style="width: 20%;">गट C (आरंभिक)</th><th style="width: 20%;">एकूण नोंदणी</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>वाचन</strong></td><td>${gt.reading.A}</td><td>${gt.reading.B}</td><td>${gt.reading.C}</td><td>${gt.reading.A+gt.reading.B+gt.reading.C}</td></tr>
+                            <tr><td><strong>लेखन</strong></td><td>${gt.writing.A}</td><td>${gt.writing.B}</td><td>${gt.writing.C}</td><td>${gt.writing.A+gt.writing.B+gt.writing.C}</td></tr>
+                            <tr><td><strong>संख्याज्ञान</strong></td><td>${gt.numeracy.A}</td><td>${gt.numeracy.B}</td><td>${gt.numeracy.C}</td><td>${gt.numeracy.A+gt.numeracy.B+gt.numeracy.C}</td></tr>
+                            <tr><td><strong>गणितीय क्रिया</strong></td><td>${gt.operations.A}</td><td>${gt.operations.B}</td><td>${gt.operations.C}</td><td>${gt.operations.A+gt.operations.B+gt.operations.C}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        document.getElementById('summaryContent').innerHTML = summaryHTML || '<p style="text-align:center;">विद्यार्थ्यांची इयत्ता निवडा.</p>';
+    }
+
+    document.getElementById('tableBody').addEventListener('change', function(e) {
+        if(e.target && (e.target.classList.contains('competency-select') || e.target.classList.contains('class-dropdown'))) { generateSummary(); }
+    });
+
+    function gatherFormData() {
+        const data = {
+            school: document.getElementById('schoolSelect').value,
+            teacher: document.getElementById('teacherSelect').value,
+            date: document.getElementById('evalDate').value,
+            center: document.getElementById('evalCenter').value,
+            taluka: document.getElementById('evalTaluka').value,
+            district: document.getElementById('evalDistrict').value,
+            evalGroup: document.getElementById('classSelect').value,
+            students: []
+        };
+        const rows = document.querySelectorAll('#tableBody tr');
+        rows.forEach(row => {
+            const name = row.querySelector('.student-name').value;
+            const cls = row.querySelector('.class-dropdown').value;
+            if (name || cls) { 
+                const selects = row.querySelectorAll('.competency-select');
+                data.students.push({
+                    name: name,
+                    className: cls,
+                    reading: selects[0].value,
+                    writing: selects[1].value,
+                    numeracy: selects[2].value,
+                    operations: selects[3].value
+                });
+            }
+        });
+        return data;
+    }
+
+    function saveDataOffline() {
+        const data = gatherFormData();
+        localStorage.setItem('nipunEvalData', JSON.stringify(data));
+        alert("माहिती ऑफलाइन सेव्ह झाली आहे! (Data saved offline successfully!)");
+    }
+
+    function loadDataOffline() {
+        const dataStr = localStorage.getItem('nipunEvalData');
+        if (!dataStr) {
+            alert("कोणताही सेव्ह केलेला डेटा सापडला नाही. (No saved data found.)");
+            return;
+        }
+        const data = JSON.parse(dataStr);
+        
+        document.getElementById('schoolSelect').value = data.school;
+        onSchoolChange(); 
+        document.getElementById('teacherSelect').value = data.teacher;
+        document.getElementById('evalDate').value = data.date;
+        document.getElementById('evalCenter').value = data.center;
+        document.getElementById('evalTaluka').value = data.taluka;
+        document.getElementById('evalDistrict').value = data.district;
+        document.getElementById('classSelect').value = data.evalGroup;
+        
+        document.getElementById('tableSubtitle').innerText = (data.evalGroup === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी') + ' | विषय क्षेत्रेः वाचन, लेखन, संख्याज्ञान, गणितीय क्रिया';
+        document.getElementById('tableBody').innerHTML = '';
+        rowCount = 0;
+
+        data.students.forEach(student => {
+            addRow();
+            const lastRow = document.querySelector('#tableBody tr:last-child');
+            lastRow.querySelector('.student-name').value = student.name;
+            lastRow.querySelector('.class-dropdown').value = student.className;
+            const selects = lastRow.querySelectorAll('.competency-select');
+            selects[0].value = student.reading;
+            selects[1].value = student.writing;
+            selects[2].value = student.numeracy;
+            selects[3].value = student.operations;
+        });
+        
+        while(rowCount < 10) { addRow(); }
+        generateSummary();
+        alert("सेव्ह केलेला डेटा लोड झाला आहे! (Data loaded successfully!)");
+    }
+
+    function syncToSheet() {
+        const pin = prompt("सिंक करण्यासाठी HM Admin PIN टाका (Enter Admin PIN):");
+        if (pin !== HM_ADMIN_PIN) {
+            alert("चुकीचा PIN! (Invalid PIN!) Access Denied.");
+            return;
+        }
+
+        if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+            alert("तुम्ही अद्याप Google Script URL जोडलेली नाही. कृपया कोडमध्ये URL अपडेट करा.");
+            return;
+        }
+
+        const data = gatherFormData();
+        const syncButton = document.querySelector('.btn-sync');
+        syncButton.innerText = "⏳ सिंक होत आहे...";
+        syncButton.disabled = true;
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(() => {
+            alert("डेटा Google Sheet मध्ये यशस्वीरीत्या सिंक झाला! (Synced Successfully!)");
+            syncButton.innerText = "☁️ Google Sheet सिंक";
+            syncButton.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error!', error.message);
+            alert("सिंक करताना एरर आला. इंटरनेट तपासा.");
+            syncButton.innerText = "☁️ Google Sheet सिंक";
+            syncButton.disabled = false;
+        });
+    }
+
+    // PDF Preparation Script for Perfect Text Wrapping
+    function prepareForPDF() {
+        const inputs = document.querySelectorAll('.form-header input, .form-header select, #tableBody input, #tableBody select');
+        inputs.forEach(el => {
+            const span = document.createElement('span');
+            span.className = 'print-span';
+            let text = '';
+            if (el.tagName === 'SELECT') {
+                text = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
+                if(text.includes('--') || text.includes('-निवडा-')) text = '';
+            } else {
+                text = el.value;
+            }
+            span.textContent = text;
+            el.style.display = 'none';
+            el.parentNode.insertBefore(span, el.nextSibling);
+        });
+    }
+
+    function cleanupAfterPDF() {
+        document.querySelectorAll('.print-span').forEach(el => el.remove());
+        document.querySelectorAll('.form-header input, .form-header select, #tableBody input, #tableBody select').forEach(el => {
+            el.style.display = '';
+        });
+    }
+
+    function downloadPDF() {
+        prepareForPDF();
+        window.print();
+        // Uses a timeout to ensure cleanup happens after the print dialog resolves
+        setTimeout(cleanupAfterPDF, 500); 
+    }
+
+    window.addEventListener('afterprint', cleanupAfterPDF);
+
+    window.onload = () => {
+        populateSchoolDropdown();
+        updateClass();
+    };
+</script>
+
+</body>
+</html>
+
