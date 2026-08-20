@@ -90,9 +90,9 @@
   /* Summary Table */
   .summary-container { margin-top: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
   .summary-table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 15px; }
-  .summary-table th { background: var(--navy); color: white; text-align: center; padding: 8px; }
+  .summary-table th { background: var(--navy); color: white; text-align: center; padding: 8px; font-size: 13px;}
   .summary-table td { text-align: center; font-size: 14px; font-weight: bold; padding: 8px; border: 1px solid #ccc;}
-  .grand-total-block { border: 2px solid #28a745; padding: 15px; border-radius: 5px; background-color: #f8fff9; }
+  .grand-total-block { border: 2px solid #28a745; padding: 15px; border-radius: 5px; background-color: #f8fff9; margin-bottom: 15px;}
   .grand-total-block h4 { color: #28a745; margin: 0 0 10px 0; border-bottom: 1px solid #28a745; padding-bottom: 5px;}
 
   /* Mobile Responsive Cards for Table */
@@ -264,6 +264,9 @@
 
       <!-- Records List -->
       <div class="subview active" id="listView">
+        <!-- Dashboard Aggregate Summary Widget -->
+        <div id="adminOverallSummary"></div>
+
         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
           <input type="text" id="searchBox" placeholder="🔍 शाळा किंवा शिक्षकाचे नाव शोधा" style="flex:1; min-width:200px;">
           <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white;">☁️ सर्व प्रलंबित सिंक करा</button>
@@ -745,7 +748,7 @@ function calculateSummaryData(rowsNodeList) {
     return { classes, counts, classesPresent, grandTotal };
 }
 
-function buildSummaryHTML(summaryData) {
+function buildSummaryHTML(summaryData, showGrandTotal = false) {
     const { classes, counts, classesPresent, grandTotal } = summaryData;
     let html = '';
     
@@ -768,7 +771,7 @@ function buildSummaryHTML(summaryData) {
         }
     });
 
-    if (html !== '') {
+    if (showGrandTotal && html !== '') {
         const gt = grandTotal;
         html += `
             <div class="grand-total-block">
@@ -789,7 +792,8 @@ function buildSummaryHTML(summaryData) {
 
 function generateSummary() {
     const data = calculateSummaryData(document.querySelectorAll('#tableBody tr'));
-    document.getElementById('summaryContent').innerHTML = buildSummaryHTML(data);
+    // Do not show Grand Total in Live Form
+    document.getElementById('summaryContent').innerHTML = buildSummaryHTML(data, false);
 }
 
 /* ============================================================
@@ -903,8 +907,40 @@ document.getElementById('changePinBtn').addEventListener('click', () => {
 function renderRecords() {
     const wrap = document.getElementById('recordsWrap');
     const filterText = document.getElementById('searchBox').value.toLowerCase();
-    const recs = loadRecords().filter(r => (r.school||'').toLowerCase().includes(filterText) || (r.teacher||'').toLowerCase().includes(filterText));
+    const allRecs = loadRecords();
+    const recs = allRecs.filter(r => (r.school||'').toLowerCase().includes(filterText) || (r.teacher||'').toLowerCase().includes(filterText));
     updatePendingCount();
+
+    // Admin Dashboard Overall Summary Calculation
+    const gt = { reading:{A:0,B:0,C:0}, writing:{A:0,B:0,C:0}, numeracy:{A:0,B:0,C:0}, operations:{A:0,B:0,C:0} };
+    let studentCount = 0;
+    allRecs.forEach(r => {
+        r.students.forEach(s => {
+            studentCount++;
+            if (s.reading.startsWith('A')) gt.reading.A++; else if (s.reading.startsWith('B')) gt.reading.B++; else if (s.reading.startsWith('C')) gt.reading.C++;
+            if (s.writing.startsWith('A')) gt.writing.A++; else if (s.writing.startsWith('B')) gt.writing.B++; else if (s.writing.startsWith('C')) gt.writing.C++;
+            if (s.numeracy.startsWith('A')) gt.numeracy.A++; else if (s.numeracy.startsWith('B')) gt.numeracy.B++; else if (s.numeracy.startsWith('C')) gt.numeracy.C++;
+            if (s.operations.startsWith('A')) gt.operations.A++; else if (s.operations.startsWith('B')) gt.operations.B++; else if (s.operations.startsWith('C')) gt.operations.C++;
+        });
+    });
+
+    let summaryHtml = '';
+    if (studentCount > 0) {
+        summaryHtml = `
+        <div class="grand-total-block" style="background:#fff; border-color:var(--navy); padding:15px; margin-bottom:20px;">
+            <h4 style="color:var(--navy); border-bottom:2px solid var(--navy); margin-top:0;">📊 सर्व जतन केलेल्या नोंदींचा एकूण समारोप (एकूण विद्यार्थी: ${studentCount})</h4>
+            <table class="summary-table" style="margin-bottom:0; font-size:14px;">
+                <thead><tr><th>विषय</th><th>गट A (प्रगत)</th><th>गट B (मध्यम)</th><th>गट C (आरंभिक)</th><th>एकूण</th></tr></thead>
+                <tbody>
+                    <tr><td>वाचन</td><td>${gt.reading.A}</td><td>${gt.reading.B}</td><td>${gt.reading.C}</td><td>${gt.reading.A+gt.reading.B+gt.reading.C}</td></tr>
+                    <tr><td>लेखन</td><td>${gt.writing.A}</td><td>${gt.writing.B}</td><td>${gt.writing.C}</td><td>${gt.writing.A+gt.writing.B+gt.writing.C}</td></tr>
+                    <tr><td>संख्याज्ञान</td><td>${gt.numeracy.A}</td><td>${gt.numeracy.B}</td><td>${gt.numeracy.C}</td><td>${gt.numeracy.A+gt.numeracy.B+gt.numeracy.C}</td></tr>
+                    <tr><td>गणितीय क्रिया</td><td>${gt.operations.A}</td><td>${gt.operations.B}</td><td>${gt.operations.C}</td><td>${gt.operations.A+gt.operations.B+gt.operations.C}</td></tr>
+                </tbody>
+            </table>
+        </div>`;
+    }
+    document.getElementById('adminOverallSummary').innerHTML = summaryHtml;
     
     if (!recs.length) { wrap.innerHTML = '<div style="text-align:center; padding:30px; color:#888;">कोणतीही नोंद सापडली नाही.</div>'; return; }
     
@@ -987,7 +1023,7 @@ document.getElementById('scriptCode').value = appsScriptCode;
 /* ============================================================
    PRINT GENERATOR (PERFECT PDF OUTPUT)
    ============================================================ */
-function generatePDFFromData(r) {
+function generatePDFFromData(r, showGrandTotal) {
     // Build Student Rows for Print
     let tableRows = r.students.map((s, i) => `
         <tr>
@@ -1013,7 +1049,7 @@ function generatePDFFromData(r) {
         dummyTbody.appendChild(tr);
     });
     
-    const summaryHtml = buildSummaryHTML(calculateSummaryData(dummyTbody.querySelectorAll('tr')));
+    const summaryHtml = buildSummaryHTML(calculateSummaryData(dummyTbody.querySelectorAll('tr')), showGrandTotal);
 
     const html = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>Nipun Eval - ${r.school}</title>
     <style>
@@ -1055,7 +1091,8 @@ function generatePDFFromData(r) {
 function printRecord(id) {
     const r = loadRecords().find(x => x._id === id);
     if (!r) return;
-    generatePDFFromData(r);
+    // Show Grand Total when printing from Admin
+    generatePDFFromData(r, true);
 }
 
 document.getElementById('printLiveBtn').addEventListener('click', () => {
@@ -1064,7 +1101,8 @@ document.getElementById('printLiveBtn').addEventListener('click', () => {
         showToast('कृपया आधी माहिती भरा.');
         return;
     }
-    generatePDFFromData(rec);
+    // DO NOT show Grand Total when printing from Live Form
+    generatePDFFromData(rec, false);
 });
 
 /* Backups */
