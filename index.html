@@ -1259,15 +1259,16 @@ document.getElementById('exportJsonBtn').addEventListener('click', () => {
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
 // Startup Initialization - Auto Fetch Silently
-window.addEventListener('DOMContentLoaded', () => {
-    buildSchoolSelect();
-    resetFormFields();
-    updateNetStatus();
-    updatePendingCount();
-    
-    // Auto pull from Cloud silently on app open
-    if(navigator.onLine) fetchFromCloud(true);
-});
+buildSchoolSelect();
+resetFormFields();
+updateNetStatus();
+updatePendingCount();
+
+// Auto pull from Cloud silently on app open
+if(navigator.onLine) {
+    fetchFromCloud(true);
+}
 </script>
 </body>
 </html>
+
