@@ -181,7 +181,7 @@
         </div>
         <div id="otherSchoolWrap" style="display:none;">
           <label>शाळेचे नाव (टाईप करा)</label>
-          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव">
+          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव" oninput="onSchoolChange()">
         </div>
         <div>
           <label>वर्गशिक्षक *</label>
@@ -375,7 +375,7 @@ const competencyData = {
         reading: { A: ["१२. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये वाचतो.", "१३. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह आकलनासह वाचतो.", "१४. अपरिचित मजकूरातील ६-८ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये वाचतो.", "१५. अपरिचित मजकूरातील ६-८ सोप्या शब्दांनी व जोडाक्षरासह तयार झालेली लहान वाक्ये अचूकपणे, आकलनासह वाचतो."], B: ["६. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.", "७. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली व जोडाक्षरासह लहान वाक्ये वाचतो.", "८. परिचित मजकूरातील २-३ सोप्या शब्दांनी व जोडाक्षरासह लहान वाक्ये अचूकपणे, आकलनासह वाचतो.", "९. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.", "१०. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली जोडाक्षर युक्त लहान वाक्ये वाचतो.", "११. परिचित मजकूरातील ३-५ सोप्या शब्दांनी व जोडाक्षरासह लहान वाक्ये अचूकपणे, आकलनासह वाचतो."], C: ["१. वर्णमालेतील काही अक्षरे व संबंधित ध्वनी ओळखत नाही.", "२. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी ओळखतो.", "३. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे दोन अक्षरी शब्द वाचतो.", "४. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे तीन ते चार अक्षरी शब्द वाचतो.", "५. मजकूरातील साध्या विरामचिन्हांची दखल घेतो."] },
         writing: { A: ["१४. श्रुतलेखनाकरिता ४-५ शब्दांची एक ते दोन सोपी वाक्ये योग्य गतीने लिहितो.", "१५. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त एक वाक्य विरामचिन्हांसह व आकलनासह ऐकून लिहितो.", "१६. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त दोन ते तीन वाक्ये विरामचिन्हांसह ऐकून लिहितो.", "१७. ६-८ शब्दांची चार ते पाच सोपी वाक्ये ऐकून लिहितो.", "१८. श्रुतलेखनाकरिता ६-८ शब्द व जोडाक्षरे यांनी युक्त ४-५ वाक्ये विरामचिन्हांसह व आकलनासह लिहितो."], B: ["८. २-३ शब्दांची व सोप्या जोडाक्षरांची एक ते दोन सोपी वाक्ये पाहून लिहितो.", "९. ४-५ सोपे शब्द व सोपी जोडाक्षरे असलेली दोन ते तीन वाक्ये आकलनासह पाहून लिहितो.", "१०. २-३ शब्दांची एक ते दोन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.", "११. २-३ शब्द व जोडाक्षरयुक्त एक ते दोन वाक्य विरामचिन्हांसह व आकलनासह ऐकून लिहितो.", "१२. २-३ सोप्या शब्दांची दोन ते तीन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.", "१३. २-३ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त विरामचिन्हांसह व आकलनासह ३-४ वाक्ये ऐकून लिहितो."], C: ["१. वर्णमालेतील अक्षरे पाहून लिहू शकत नाही.", "२. वर्णमालेतील अक्षरे पाहून लिहितो.", "३. सोपे शब्द पाहून लिहितो.", "४. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरांच्या ध्वनीला ऐकून अक्षरे लिहितो.", "५. श्रुतलेखन करताना वर्णमालेतील काही अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.", "६. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.", "७. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे, स्वरचिन्हयुक्त व जोडाक्षरयुक्त शब्द लिहितो."] },
         numeracy: { A: ["१८. ० ते ९ संख्यानामे लिहितो. (अक्षरी)", "१९. ० ते २० संख्यानामे लिहितो. (अक्षरी)", "२०. ० ते ५० संख्यानामे लिहितो. (अक्षरी)"], B: ["१०. १० ते २० पर्यंतच्या संख्या ओळखतो/वाचतो.", "११. १० ते २० पर्यंत संख्या लिहितो. (अंकी)", "१२. २१ ते ५० पर्यंतची संख्यानामे क्रमाने म्हणतो.", "१३. स्थानिक किंमत संकल्पना वापरून २१ ते ५० पर्यंतच्या संख्या ओळखतो/वाचतो.", "१४. २१ ते ५० पर्यंतच्या संख्या लिहितो. (अंकी)", "१५. ५१ ते ९९ पर्यंतची संख्यानामे क्रमाने म्हणतो.", "१६. स्थानिक किंमत संकल्पना वापरून ५१ ते ९९ पर्यंतच्या संख्या ओळखतो.", "१७. ५१ ते ९९ पर्यंतच्या संख्या लिहितो. (अंकी)"], C: ["१. ० ते ९ संख्यानामे क्रमाने म्हणता येत नाहीत.", "२. ० ते ९ संख्यानामे क्रमाने म्हणतो.", "३. ० ते ९ पर्यंतच्या वस्तू मोजतो.", "४. ९ पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो.", "५. ० ते ९ पर्यंतच्या संख्या ओळखतो/वाचतो.", "६. ० ते ९ पर्यंत संख्या लिहितो. (अंकी)", "७. १० ते २० संख्यानामे क्रमाने म्हणतो.", "८. १० ते २० पर्यंतच्या वस्तू मोजतो.", "९. २० पर्यंतच्या वस्तूच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो."] },
-        operations: { A: ["२४. स्थानिक किमत संकल्पना वापरून ० ते ९९ पर्यंतच्या संख्यांची बेरीज करतो. (बिनहातच्याची)", "२५. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची बेरीज करतो. (हातच्याची)", "२६. ० ते ९९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२७. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (बिनहातच्याची)", "२८. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (हातच्याची)", "२९. ९९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], B: ["१४. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "१5. ० ते २० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१६. ० ते २० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "१७. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१८. ० ते २० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१९. ० ते २० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "२०. ० ते ५० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "२१. ० ते ५० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२२. ० ते ५० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "२३. ० ते ५० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], C: ["१. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करता येत नाही.", "२. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "३. ० ते ४ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "४. ० ते ४ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "५. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "६. ० ते ४ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "७. ० ते ४ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "८. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरजेची उदाहरणे सोडवितो.", "९. ० ते ९ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१०. ० ते ९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "११. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१२. ० ते ९ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१३. ० ते ९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."] }
+        operations: { A: ["२४. स्थानिक किमत संकल्पना वापरून ० ते ९९ पर्यंतच्या संख्यांची बेरीज करतो. (बिनहातच्याची)", "२५. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची बेरीज करतो. (हातच्याची)", "२६. ० ते ९९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२७. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (बिनहातच्याची)", "२८. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (हातच्याची)", "२९. ९९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], B: ["१४. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "१5. ० ते २० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१६. ० ते २० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "१७. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१८. ० ते २० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१९. ० ते २० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "२०. ० ते ५0 पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "२१. ० ते ५० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२२. ० ते ५० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "२३. ० ते ५० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], C: ["१. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करता येत नाही.", "२. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "३. ० ते ४ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "४. ० ते ४ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "५. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "६. ० ते ४ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "७. ० ते ४ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "८. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरजेची उदाहरणे सोडवितो.", "९. ० ते ९ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१०. ० ते ९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "११. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१२. ० ते ९ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१३. ० ते ९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."] }
     }
 };
 
@@ -433,7 +433,11 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
         const sVal = document.getElementById('schoolSelect').value;
         const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
         const existing = getRecordBySchool(schoolName);
-        if(!existing) document.getElementById('formToolbar').style.display = 'flex';
+        if(!existing && schoolName !== '') {
+             document.getElementById('formToolbar').style.display = 'flex';
+        } else if (schoolName === '') {
+             document.getElementById('formToolbar').style.display = 'none';
+        }
     }
   });
 });
@@ -453,16 +457,32 @@ document.querySelectorAll('#adminContent .btn-sm[data-subview]').forEach(btn => 
    ============================================================ */
 function buildSchoolSelect() {
     const sel = document.getElementById('schoolSelect');
-    sel.innerHTML = '<option value="">-- शाळा निवडा --</option>';
-    schoolList.forEach((s, idx) => { sel.add(new Option(`${s.name} (${s.code})`, idx)); });
-    sel.add(new Option("इतर (यादीत नसल्यास)", "other"));
+    sel.innerHTML = ''; 
+    const defOpt = document.createElement('option');
+    defOpt.value = "";
+    defOpt.text = "-- शाळा निवडा --";
+    sel.appendChild(defOpt);
+    
+    schoolList.forEach((s, idx) => { 
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.text = `${s.name} (${s.code})`;
+        sel.appendChild(opt);
+    });
+    
+    const otherOpt = document.createElement('option');
+    otherOpt.value = "other";
+    otherOpt.text = "इतर (यादीत नसल्यास)";
+    sel.appendChild(otherOpt);
 }
 
 function setFormLock(isLocked) {
-    const inputs = document.querySelectorAll('#formView input:not(#csvInput), #formView select:not(#schoolSelect)');
+    const inputs = document.querySelectorAll('#formView input:not(#csvInput):not(#otherSchoolName), #formView select:not(#schoolSelect)');
     inputs.forEach(el => el.disabled = isLocked);
     
     document.getElementById('schoolSelect').disabled = false;
+    document.getElementById('otherSchoolName').disabled = isLocked;
+    
     document.getElementById('lockedBanner').style.display = isLocked ? 'block' : 'none';
     document.getElementById('csvBtnWrap').style.display = isLocked ? 'none' : 'flex';
     
@@ -476,35 +496,70 @@ function setFormLock(isLocked) {
 }
 
 function onSchoolChange() {
-    const sel = document.getElementById('schoolSelect');
-    const wrap = document.getElementById('otherSchoolWrap');
-    wrap.style.display = (sel.value === 'other') ? 'block' : 'none';
-    
-    const sVal = sel.value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
-    
-    if (!schoolName) {
-        document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
-        resetFormFields();
-        setFormLock(false);
-        document.getElementById('formToolbar').style.display = 'none';
-        return;
-    }
-    
-    const existingRec = getRecordBySchool(schoolName);
-    
-    if (existingRec) {
-        populateFormWithRecord(existingRec);
-        setFormLock(true);
-    } else {
-        const teachers = teacherData[schoolName];
-        const tSel = document.getElementById('teacherSelect');
-        tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
-        if (teachers) teachers.forEach(t => tSel.add(new Option(`${t.name} (${t.desig})`, t.name)));
-        tSel.add(new Option("इतर (यादीत नसल्यास)", "other_teacher"));
+    try {
+        const sel = document.getElementById('schoolSelect');
+        const wrap = document.getElementById('otherSchoolWrap');
+        const sVal = sel.value;
         
-        resetFormFields();
-        setFormLock(false);
+        wrap.style.display = (sVal === 'other') ? 'block' : 'none';
+        
+        // Handle Default unselected
+        if (sVal === "") {
+            document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
+            resetFormFields();
+            setFormLock(false);
+            document.getElementById('formToolbar').style.display = 'none';
+            return;
+        }
+
+        // Handle Custom "Other" School
+        if (sVal === "other") {
+            const typedName = document.getElementById('otherSchoolName').value.trim();
+            const existingRec = getRecordBySchool(typedName);
+            
+            document.getElementById('teacherSelect').innerHTML = '<option value="">-- शिक्षक निवडा --</option><option value="other_teacher">इतर (यादीत नसल्यास)</option>';
+            
+            if (typedName !== "" && existingRec) {
+                populateFormWithRecord(existingRec);
+                setFormLock(true);
+            } else {
+                resetFormFields();
+                setFormLock(false);
+                document.getElementById('formToolbar').style.display = 'flex';
+            }
+            return;
+        }
+
+        // Standard School Selected
+        const schoolName = schoolList[sVal].name;
+        const existingRec = getRecordBySchool(schoolName);
+        
+        if (existingRec) {
+            populateFormWithRecord(existingRec);
+            setFormLock(true);
+        } else {
+            const teachers = teacherData[schoolName];
+            const tSel = document.getElementById('teacherSelect');
+            tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
+            if (teachers) {
+                teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.name;
+                    opt.text = `${t.name} (${t.desig})`;
+                    tSel.appendChild(opt);
+                });
+            }
+            const oOpt = document.createElement('option');
+            oOpt.value = "other_teacher";
+            oOpt.text = "इतर (यादीत नसल्यास)";
+            tSel.appendChild(oOpt);
+            
+            resetFormFields();
+            setFormLock(false);
+            document.getElementById('formToolbar').style.display = 'flex';
+        }
+    } catch(err) {
+        console.error(err);
     }
 }
 
@@ -512,10 +567,15 @@ function onTeacherChange() {
     const sel = document.getElementById('teacherSelect');
     if (sel.value === "other_teacher") {
         const customName = prompt("शिक्षकाचे नाव टाका:");
-        if (customName) {
-            sel.add(new Option(customName, customName), sel.lastElementChild);
+        if (customName && customName.trim() !== '') {
+            const opt = document.createElement('option');
+            opt.value = customName;
+            opt.text = customName;
+            sel.insertBefore(opt, sel.lastElementChild);
             sel.value = customName;
-        } else sel.value = "";
+        } else {
+            sel.value = "";
+        }
     }
 }
 
@@ -546,7 +606,10 @@ function generateOptGroup(groupLabel, dataArray, prefix, selectedVal) {
 
 function createDropdown(subject, selectedVal = "", disabled = false) {
     const selectedClass = document.getElementById('classSelect').value;
-    const opt = competencyData[selectedClass][subject];
+    let opt = {A:[], B:[], C:[]};
+    if(competencyData[selectedClass] && competencyData[selectedClass][subject]) {
+        opt = competencyData[selectedClass][subject];
+    }
     let html = `<select class="competency-select" data-subject="${subject}" onchange="generateSummary()" ${disabled?'disabled':''}>`;
     html += `<option value="">-- क्षमता निवडा --</option>`;
     html += generateOptGroup("गट A (प्रगत)", opt.A, "A", selectedVal);
@@ -673,13 +736,16 @@ function calculateSummaryData(rowsNodeList) {
     const classesPresent = new Set();
 
     rowsNodeList.forEach(row => {
-        const cls = row.querySelector('.class-dropdown').value;
+        const classDrop = row.querySelector('.class-dropdown');
+        if(!classDrop) return;
+        const cls = classDrop.value;
         if (!cls) return; 
         classesPresent.add(cls);
         
         row.querySelectorAll('.competency-select').forEach(sel => {
             const subj = sel.getAttribute('data-subject');
             const val = sel.value;
+            if(!val) return;
             if (val.startsWith('A')) { counts[cls][subj].A++; grandTotal[subj].A++; }
             else if (val.startsWith('B')) { counts[cls][subj].B++; grandTotal[subj].B++; }
             else if (val.startsWith('C')) { counts[cls][subj].C++; grandTotal[subj].C++; }
@@ -738,9 +804,9 @@ function generateSummary() {
 /* Form Save & Lock */
 document.getElementById('saveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[sVal].name : '');
     
-    if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा.'); return; }
+    if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा किंवा टाईप करा.'); return; }
     
     const rec = {
         _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
@@ -769,7 +835,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         }
     });
 
-    if (rec.students.length === 0) { showToast('किमान एका विद्यार्थ्याची संपूर्ण माहिती भरा.'); return; }
+    if (rec.students.length === 0) { showToast('किमान एका विद्यार्थ्याची संपूर्ण माहिती (नाव आणि इयत्ता) भरा.'); return; }
     
     const recs = loadRecords();
     recs.unshift(rec);
@@ -1250,16 +1316,20 @@ document.getElementById('exportJsonBtn').addEventListener('click', () => {
 // Init PWA Service Worker
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
-// Startup Initialization - Auto Fetch Silently
-try {
-    buildSchoolSelect();
-    resetFormFields();
-    updateNetStatus();
-    updatePendingCount();
-    
-    // Auto pull from Cloud silently on app open
-    if(navigator.onLine) fetchFromCloud(true);
-} catch(e) { console.error("Init err:", e); }
+// Startup Initialization - Robust Method
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        buildSchoolSelect();
+        resetFormFields();
+        updateNetStatus();
+        updatePendingCount();
+        
+        // Auto pull from Cloud silently on app open
+        if(navigator.onLine) fetchFromCloud(true);
+    } catch(e) {
+        console.error("Initialization Error:", e);
+    }
+});
 
 </script>
 </body>
