@@ -45,6 +45,8 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .dot.on { background: #4CD46C; }
   .dot.off { background: #ff6b6b; }
+  .auto-sync-icon { animation: spin 2s linear infinite; display: none; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
   
   .tabbar {
     display: flex; background: #fff; border-bottom: 1px solid var(--border);
@@ -151,6 +153,7 @@
     <div class="status-strip">
       <span class="dot off" id="netDot"></span><span id="netText">ऑफलाइन</span>
       <span style="margin-left:15px;" id="pendingCountWrap">प्रलंबित सिंक: <b id="pendingCount">0</b></span>
+      <span id="autoSyncIcon" class="auto-sync-icon" style="margin-left:10px;">🔄</span>
     </div>
   </div>
 </header>
@@ -284,7 +287,7 @@
         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
           <button class="btn-primary btn-sm" onclick="printConsolidatedReport()" style="flex:1; background:var(--navy2); font-size:14px; padding:10px;">🖨️ केंद्राचा एकूण अहवाल</button>
           <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white; flex:1;">☁️ सर्व सिंक करा (Push)</button>
-          <button class="btn-cloud btn-sm" id="fetchCloudBtn" style="flex:1;">📥 शीटवरून आणा (Fetch)</button>
+          <button class="btn-cloud btn-sm" onclick="fetchFromCloud(false)" style="flex:1;">📥 शीटवरून आणा (Fetch)</button>
           <button class="btn-secondary btn-sm" id="exportJsonBtn" style="flex:1;">⬇️ JSON बॅकअप</button>
         </div>
         
@@ -377,7 +380,7 @@ const competencyData = {
 };
 
 /* ============================================================
-   SYSTEM LOGIC & STATE
+   SYSTEM LOGIC & STATE (With Auto-Fetch)
    ============================================================ */
 const LS_RECORDS = "nipun_records_v1";
 const LS_PIN = "nipun_admin_pin_v1";
@@ -403,7 +406,17 @@ function updateNetStatus() {
   if (navigator.onLine) { dot.className = 'dot on'; txt.textContent = 'ऑनलाइन'; }
   else { dot.className = 'dot off'; txt.textContent = 'ऑफलाइन'; }
 }
-window.addEventListener('online', () => { updateNetStatus(); showToast('इंटरनेट चालू झाले! डेटा सिंक करता येईल.'); });
+
+window.addEventListener('online', () => { 
+    updateNetStatus(); 
+    showToast('इंटरनेट चालू झाले! डेटा सिंक होत आहे...');
+    fetchFromCloud(true); // Auto fetch silently when network is back
+    // Also auto push pending records silently
+    const pending = loadRecords().filter(r => !r.synced);
+    if(pending.length > 0) {
+        pending.forEach(r => syncRecord(r._id, true));
+    }
+});
 window.addEventListener('offline', updateNetStatus);
 
 /* Tabs Handling */
@@ -453,7 +466,15 @@ function setFormLock(isLocked) {
     document.getElementById('schoolSelect').disabled = false;
     document.getElementById('lockedBanner').style.display = isLocked ? 'block' : 'none';
     document.getElementById('csvBtnWrap').style.display = isLocked ? 'none' : 'flex';
-    document.getElementById('formToolbar').style.display = isLocked ? 'none' : 'flex';
+    
+    // Hide default Save button, but show Print buttons if locked
+    if(isLocked) {
+        document.getElementById('formToolbar').style.display = 'flex';
+        document.getElementById('saveBtn').style.display = 'none';
+    } else {
+        document.getElementById('formToolbar').style.display = 'flex';
+        document.getElementById('saveBtn').style.display = 'inline-flex';
+    }
 }
 
 function onSchoolChange() {
@@ -468,6 +489,7 @@ function onSchoolChange() {
         document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
         resetFormFields();
         setFormLock(false);
+        document.getElementById('formToolbar').style.display = 'none';
         return;
     }
     
@@ -756,7 +778,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     saveRecords(recs);
     showToast('✅ नोंद जतन झाली! फॉर्म आता लॉक झाला आहे.');
     
-    if(navigator.onLine) syncRecord(rec._id);
+    if(navigator.onLine) syncRecord(rec._id, false);
     onSchoolChange(); 
 });
 
@@ -911,11 +933,11 @@ function renderAdminDashboard() {
 }
 
 /* ============================================================
-   GOOGLE SYNC (PUSH) & FETCH (PULL)
+   GOOGLE AUTO-SYNC (PUSH) & AUTO-FETCH (PULL)
    ============================================================ */
 
-// 1. Send data to Google Sheet
-function syncRecord(id) {
+// 1. Send data to Google Sheet (Sync / Push)
+function syncRecord(id, silent = false) {
     const recs = loadRecords();
     const rec = recs.find(r => r._id === id);
     if (!rec || rec.synced) return;
@@ -924,54 +946,73 @@ function syncRecord(id) {
     .then(() => {
         rec.synced = true; saveRecords(recs); 
         if(isAdminAuthed()) renderAdminDashboard();
-        showToast('☁️ डेटा शीटवर सिंक झाला.');
-    }).catch(() => showToast('⚠️ इंटरनेट तपासा. सिंक अयशस्वी.'));
+        if(!silent) showToast('☁️ डेटा शीटवर सिंक झाला.');
+    }).catch(() => { if(!silent) showToast('⚠️ इंटरनेट तपासा. सिंक अयशस्वी.'); });
 }
 
 document.getElementById('syncAllBtn').addEventListener('click', () => {
     const pending = loadRecords().filter(r => !r.synced);
     if (!pending.length) { showToast('सर्व डेटा आधीच सिंक झाला आहे.'); return; }
     showToast(`${pending.length} नोंदी सिंक करत आहे...`);
-    pending.forEach(r => syncRecord(r._id));
+    pending.forEach(r => syncRecord(r._id, false));
 });
 
-// 2. Fetch data from Google Sheet
-document.getElementById('fetchCloudBtn').addEventListener('click', () => {
-    if (!navigator.onLine) { showToast('इंटरनेट चालू नाही. कृपया नेटवर्क तपासा.'); return; }
+// 2. Fetch data from Google Sheet (Auto-Fetch)
+function fetchFromCloud(silent = false) {
+    if (!navigator.onLine) { 
+        if(!silent) showToast('इंटरनेट चालू नाही. कृपया नेटवर्क तपासा.'); 
+        return; 
+    }
 
-    showToast('⏳ Google Sheet वरून डेटा आणत आहे...');
+    if(!silent) showToast('⏳ Google Sheet वरून डेटा आणत आहे...');
+    else document.getElementById('autoSyncIcon').style.display = 'inline-block';
 
     fetch(GS_URL)
     .then(res => res.json())
     .then(data => {
+        document.getElementById('autoSyncIcon').style.display = 'none';
         if (data && data.status === 'ok' && Array.isArray(data.records)) {
             const localRecs = loadRecords();
-            let addedCount = 0;
+            let isUpdated = false;
             
             data.records.forEach(cloudRec => {
                 const localIndex = localRecs.findIndex(r => r.school === cloudRec.school);
                 if (localIndex >= 0) {
                     if(localRecs[localIndex].synced) {
                         localRecs[localIndex] = cloudRec;
+                        isUpdated = true;
                     }
                 } else {
                     localRecs.push(cloudRec);
-                    addedCount++;
+                    isUpdated = true;
                 }
             });
 
-            saveRecords(localRecs);
-            renderAdminDashboard();
-            showToast(`✅ यश! ${data.records.length} शाळांचा डेटा शीटवरून अपडेट झाला.`);
-            onSchoolChange();
+            if(isUpdated) {
+                saveRecords(localRecs);
+                if(isAdminAuthed()) renderAdminDashboard();
+                
+                // Immediately update lock status on current view
+                const sVal = document.getElementById('schoolSelect').value;
+                const currentSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+                if (currentSchool && getRecordBySchool(currentSchool)) {
+                    setFormLock(true);
+                }
+            }
+            
+            if(!silent) showToast(`✅ यश! ${data.records.length} शाळांचा डेटा शीटवरून अपडेट झाला.`);
         } else {
-            showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
+            if(!silent) showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
         }
     })
     .catch(err => {
-        showToast('❌ डेटा आणताना त्रुटी आली. नेटवर्क तपासा.');
+        document.getElementById('autoSyncIcon').style.display = 'none';
+        if(!silent) showToast('❌ डेटा आणताना त्रुटी आली. नेटवर्क तपासा.');
     });
-});
+}
+
+// Keep the manual button for Force Fetch
+document.getElementById('fetchCloudBtn').addEventListener('click', () => fetchFromCloud(false));
 
 /* ============================================================
    PRINT GENERATORS
@@ -1201,7 +1242,7 @@ function printConsolidatedReport() {
     </body></html>`;
 
     const w = window.open('', '_blank');
-    if(!w) { showToast('पॉप-अप ব্লক झाला. परवानगी द्या.'); return; }
+    if(!w) { showToast('पॉप-अप ब्लॉक झाला. परवानगी द्या.'); return; }
     w.document.open(); w.document.write(html); w.document.close();
     setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
 }
@@ -1217,11 +1258,16 @@ document.getElementById('exportJsonBtn').addEventListener('click', () => {
 // Init PWA Service Worker
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
-// Startup Initialization
-buildSchoolSelect();
-resetFormFields();
-updateNetStatus();
-updatePendingCount();
+// Startup Initialization - Auto Fetch Silently
+window.addEventListener('DOMContentLoaded', () => {
+    buildSchoolSelect();
+    resetFormFields();
+    updateNetStatus();
+    updatePendingCount();
+    
+    // Auto pull from Cloud silently on app open
+    if(navigator.onLine) fetchFromCloud(true);
+});
 </script>
 </body>
 </html>
