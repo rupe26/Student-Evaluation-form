@@ -128,6 +128,7 @@
   .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 700; margin-top:5px; }
   .badge.synced { background: #e7f6ee; color: var(--ok); }
   .badge.pending { background: #fff4e2; color: var(--pending); }
+  .badge.conflict { background: #fdeceb; color: var(--danger); }
   .rec-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
   
   .small-note { font-size: 12px; color: #7a8296; line-height: 1.5; }
@@ -167,6 +168,8 @@
   <!-- ===================== 1. FORM VIEW ===================== -->
   <div class="view active" id="formView">
     
+    <div id="lockedBanner"></div>
+
     <div class="section">
       <h3 class="section-title">शाळा व शिक्षकाची माहिती</h3>
       <div class="form-grid">
@@ -262,6 +265,10 @@
         <button class="btn-primary" style="width:100%; margin-top:15px;" id="loginPinBtn">प्रवेश करा</button>
         <p class="small-note" id="pinError" style="color:var(--danger); display:none; margin-top:10px;">❌ चुकीचा PIN.</p>
       </div>
+
+      <div class="rec-card" id="pinCheckingCard" style="display:none; max-width:400px; margin:40px auto; text-align:center;">
+        <p class="small-note">⏳ क्लाउडवरून माहिती तपासत आहे...</p>
+      </div>
     </div>
 
     <!-- Admin Content -->
@@ -284,6 +291,13 @@
           <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white; flex:1;">☁️ सर्व सिंक करा (Push)</button>
           <button class="btn-cloud btn-sm" onclick="fetchFromCloud(false)" style="flex:1;">📥 शीटवरून आणा (Fetch)</button>
           <button class="btn-secondary btn-sm" id="exportJsonBtn" style="flex:1;">⬇️ JSON बॅकअप</button>
+        </div>
+
+        <!-- Admin-only Reset Control -->
+        <div class="rec-card" style="border-left:5px solid var(--danger); margin-bottom:15px;">
+          <h4 style="color:var(--danger); margin-top:0;">⚠️ डेटा रीसेट (फक्त केंद्रप्रमुखांसाठी)</h4>
+          <p class="small-note">हे बटण या डिव्हाइसवरील सर्व स्थानिक नोंदी कायमच्या डिलीट करेल. Google Sheet वरील डेटा यामुळे डिलीट होत नाही.</p>
+          <button class="btn-danger btn-sm" id="resetAllBtn">🗑️ सर्व स्थानिक डेटा रीसेट करा</button>
         </div>
         
         <div id="recordsWrap"></div>
@@ -382,13 +396,14 @@ const LS_PIN = "nipun_admin_pin_v1";
 const SS_AUTH = "nipun_admin_authed_v1";
 
 // ⚠️ IMPORTANT: REPLACE THIS URL WITH YOUR NEW GOOGLE APPS SCRIPT URL ⚠️
-const GS_URL = "https://script.google.com/macros/s/AKfycbyaix2IYZxQPXWygEc4pWI1pXY7LvjiATnvJ7SXQ9lw0NB5jJXNDf2CBav7VZdHHmna/exec";
+const GS_URL = "https://script.google.com/macros/s/AKfycbxq6E9a8W19yym-QohuBi3f2CUAzawQSpofXOAjnSanOF6UpI0UOTtqKketr2giQYVY/exec";
 
 let rowCount = 0;
+let cloudFetchInFlight = null;
 
 function loadRecords() { try { return JSON.parse(localStorage.getItem(LS_RECORDS)) || []; } catch(e) { return []; } }
 function saveRecords(recs) { localStorage.setItem(LS_RECORDS, JSON.stringify(recs)); updatePendingCount(); }
-function updatePendingCount() { document.getElementById('pendingCount').textContent = loadRecords().filter(r => !r.synced).length; }
+function updatePendingCount() { document.getElementById('pendingCount').textContent = loadRecords().filter(r => !r.synced && !r.syncConflict).length; }
 
 let toastTimer;
 function showToast(msg) {
@@ -407,8 +422,11 @@ function updateNetStatus() {
 window.addEventListener('online', () => { 
     updateNetStatus(); 
     showToast('इंटरनेट चालू झाले! डेटा सिंक होत आहे...');
-    fetchFromCloud(true);
-    const pending = loadRecords().filter(r => !r.synced);
+    fetchFromCloud(true).then(() => {
+        const sVal = document.getElementById('schoolSelect').value;
+        if (sVal !== '' ) reValidateDuplicateForCurrentSelection();
+    });
+    const pending = loadRecords().filter(r => !r.synced && !r.syncConflict);
     if(pending.length > 0) {
         pending.forEach(r => syncRecord(r._id, true));
     }
@@ -424,7 +442,7 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
     document.getElementById(btn.dataset.view).classList.add('active');
     
     if(btn.dataset.view === 'adminView') {
-        refreshAdminGate();
+        openAdminGate();
         document.getElementById('formToolbar').style.display = 'none';
     } else {
         const sVal = document.getElementById('schoolSelect').value;
@@ -490,6 +508,73 @@ function setFormLock(isLocked) {
     }
 }
 
+function hideDuplicateBanner() {
+    const banner = document.getElementById('lockedBanner');
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+}
+
+function showDuplicateBanner(rec) {
+    const banner = document.getElementById('lockedBanner');
+    const when = rec._savedAt ? new Date(rec._savedAt).toLocaleString('mr-IN') : '-';
+    banner.innerHTML = `🔒 या शाळेसाठी "${rec.teacher}" यांची नोंद आधीच जतन केलेली आहे (${when}). पुन्हा नोंद करता येणार नाही (डुप्लिकेट टाळण्यासाठी). बदल हवा असल्यास केंद्रप्रमुखांशी (Admin) संपर्क साधा.`;
+    banner.style.display = 'block';
+}
+
+/**
+ * Checks whether the currently selected school + teacher combination already
+ * has a saved record (locally or already pulled from the cloud), and locks
+ * the entry form to prevent an accidental duplicate submission.
+ * Returns true if locked due to duplicate.
+ */
+function checkDuplicateEntry(schoolName, teacherName) {
+    if (!schoolName || !teacherName || teacherName === 'other_teacher') {
+        hideDuplicateBanner();
+        setFormLock(false);
+        return false;
+    }
+    const recs = loadRecords();
+    const dup = recs.find(r =>
+        (r.school || '').trim() === schoolName.trim() &&
+        (r.teacher || '').trim() === teacherName.trim()
+    );
+    if (dup) {
+        showDuplicateBanner(dup);
+        setFormLock(true);
+        return true;
+    } else {
+        hideDuplicateBanner();
+        setFormLock(false);
+        return false;
+    }
+}
+
+function getCurrentSchoolName() {
+    const sVal = document.getElementById('schoolSelect').value;
+    if (sVal === 'other') return document.getElementById('otherSchoolName').value.trim();
+    if (sVal !== '') return schoolList[parseInt(sVal, 10)].name;
+    return '';
+}
+
+function getCurrentTeacherName() {
+    return document.getElementById('teacherSelect').value;
+}
+
+/**
+ * Re-runs the duplicate check for whatever is currently selected in the form,
+ * pulling the latest cloud data first (if online) so that entries made from
+ * another device are caught before a duplicate is created.
+ */
+async function reValidateDuplicateForCurrentSelection() {
+    const schoolName = getCurrentSchoolName();
+    const teacherName = getCurrentTeacherName();
+    if (!schoolName || !teacherName || teacherName === 'other_teacher') return;
+    if (navigator.onLine) {
+        try { await fetchFromCloud(true); } catch(e) {}
+    }
+    checkDuplicateEntry(schoolName, teacherName);
+}
+
 function onSchoolChange() {
     try {
         const sel = document.getElementById('schoolSelect');
@@ -501,6 +586,7 @@ function onSchoolChange() {
         if (sVal === "") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
             resetFormFields();
+            hideDuplicateBanner();
             setFormLock(false);
             document.getElementById('formToolbar').style.display = 'none';
             return;
@@ -509,6 +595,7 @@ function onSchoolChange() {
         if (sVal === "other") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- शिक्षक निवडा --</option><option value="other_teacher">इतर (यादीत नसल्यास)</option>';
             resetFormFields();
+            hideDuplicateBanner();
             setFormLock(false);
             document.getElementById('formToolbar').style.display = 'flex';
             checkOtherSchool(); 
@@ -539,6 +626,7 @@ function onSchoolChange() {
         tSel.appendChild(oOpt);
 
         resetFormFields();
+        hideDuplicateBanner();
         setFormLock(false); 
         document.getElementById('formToolbar').style.display = 'flex';
     } catch(err) {
@@ -549,7 +637,13 @@ function onSchoolChange() {
 function checkOtherSchool() {
     const typedName = document.getElementById('otherSchoolName').value.trim();
     if (typedName !== "") {
-        setFormLock(false);
+        const teacherName = getCurrentTeacherName();
+        if (teacherName && teacherName !== 'other_teacher') {
+            reValidateDuplicateForCurrentSelection();
+        } else {
+            hideDuplicateBanner();
+            setFormLock(false);
+        }
         document.getElementById('formToolbar').style.display = 'flex';
     }
 }
@@ -566,8 +660,12 @@ function onTeacherChange() {
             sel.value = customName;
         } else {
             sel.value = "";
+            hideDuplicateBanner();
+            setFormLock(false);
+            return;
         }
     }
+    reValidateDuplicateForCurrentSelection();
 }
 
 function createClassDropdown(selectedVal = "", disabled = false) {
@@ -762,13 +860,22 @@ function generateSummary() {
 }
 
 /* Form Save */
-document.getElementById('saveBtn').addEventListener('click', () => {
+document.getElementById('saveBtn').addEventListener('click', async () => {
     const sVal = document.getElementById('schoolSelect').value;
     const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
     const teacherName = document.getElementById('teacherSelect').value;
     
     if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा किंवा टाईप करा.'); return; }
     if (!teacherName) { showToast('कृपया शिक्षकाचे नाव निवडा.'); return; }
+
+    // Final duplicate guard: re-check against the freshest data right before saving
+    if (navigator.onLine) {
+        try { await fetchFromCloud(true); } catch(e) {}
+    }
+    if (checkDuplicateEntry(schoolName, teacherName)) {
+        showToast('⚠️ या शिक्षकाची नोंद आधीच जतन झालेली आहे. डुप्लिकेट नोंद जतन करता येणार नाही.');
+        return;
+    }
     
     const rec = {
         _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
@@ -830,8 +937,30 @@ function syncPinToCloud(pin) {
     }).catch(err => console.log("PIN sync failed", err));
 }
 
+/**
+ * Called when the admin tab is opened. Before deciding whether to show the
+ * "set up a PIN" screen or the "enter PIN" screen, it tries to pull the
+ * latest PIN from the cloud first -- this is what makes the PIN work across
+ * multiple devices (device B should see the PIN device A already set,
+ * instead of being offered a fresh "set up PIN" screen).
+ */
+async function openAdminGate() {
+    if (isAdminAuthed()) { refreshAdminGate(); return; }
+
+    if (navigator.onLine) {
+        document.getElementById('adminContent').style.display = 'none';
+        document.getElementById('pinSetupCard').style.display = 'none';
+        document.getElementById('pinLoginCard').style.display = 'none';
+        document.getElementById('pinCheckingCard').style.display = 'block';
+        try { await fetchFromCloud(true); } catch(e) {}
+        document.getElementById('pinCheckingCard').style.display = 'none';
+    }
+    refreshAdminGate();
+}
+
 function refreshAdminGate() {
   const lock = document.getElementById('adminLock'); const content = document.getElementById('adminContent');
+  document.getElementById('pinCheckingCard').style.display = 'none';
   if (isAdminAuthed()) { lock.style.display = 'none'; content.style.display = 'block'; renderAdminDashboard(); return; }
   content.style.display = 'none'; lock.style.display = 'block';
   
@@ -872,12 +1001,39 @@ document.getElementById('changePinBtn').addEventListener('click', () => {
     showToast('✅ PIN यशस्वीरित्या बदलला.');
 });
 
+/* Admin-only: reset all local data */
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+    if (!isAdminAuthed()) { showToast('फक्त केंद्रप्रमुख (Admin) यांनाच रीसेट करता येईल.'); return; }
+    const recs = loadRecords();
+    if (!recs.length) { showToast('रीसेट करण्यासाठी कोणताही डेटा नाही.'); return; }
+    if (confirm(`⚠️ खात्री आहे का? या डिव्हाइसवरील सर्व ${recs.length} नोंदी कायमच्या डिलीट होतील. (Google Sheet वरील डेटा सुरक्षित राहील.)`)) {
+        localStorage.removeItem(LS_RECORDS);
+        updatePendingCount();
+        renderAdminDashboard();
+        showToast('🗑️ सर्व स्थानिक डेटा रीसेट झाला.');
+    }
+});
+
 function unlockSchoolRecord(id, name) {
-    if(confirm(`⚠️ तुम्हाला खात्री आहे का की "${name}" ची ही नोंद डिलीट करायची आहे?`)) {
+    if(confirm(`⚠️ तुम्हाला खात्री आहे का की "${name}" ची ही नोंद डिलीट करायची आहे? (Google Sheet वरूनही कायमची डिलीट होईल)`)) {
         saveRecords(loadRecords().filter(r => r._id !== id));
         renderAdminDashboard();
         showToast(`🗑️ नोंद डिलीट केली.`);
+
+        if (navigator.onLine) {
+            deleteRecordFromCloud(id).then(ok => {
+                if (!ok) showToast('⚠️ Google Sheet वरून डिलीट करता आले नाही. पुन्हा ऑनलाइन असताना प्रयत्न करा.');
+            });
+        } else {
+            showToast('⚠️ सध्या ऑफलाइन आहात — पुन्हा इंटरनेट आल्यावर ही नोंद Google Sheet मध्ये पुन्हा दिसू शकते, तेव्हा पुन्हा डिलीट करा.');
+        }
     }
+}
+
+function recordBadgeHtml(rec) {
+    if (rec.synced) return `<span class="badge synced">☁️ सिंक झाले</span>`;
+    if (rec.syncConflict) return `<span class="badge conflict">⚠️ डुप्लिकेट - सिंक अडकले</span>`;
+    return `<span class="badge pending">⏳ प्रलंबित सिंक</span>`;
 }
 
 function renderAdminDashboard() {
@@ -933,11 +1089,11 @@ function renderAdminDashboard() {
         if (schoolRecs.length > 0) {
             schoolRecs.forEach(rec => {
                 gridHtml += `
-                <div class="rec-card" style="border-left: 5px solid var(--ok);">
+                <div class="rec-card" style="border-left: 5px solid ${rec.syncConflict ? 'var(--danger)' : 'var(--ok)'};">
                     <h4>${school.name}</h4>
                     <div class="meta">शिक्षक: ${rec.teacher} | गट: ${rec.evalGroup === 'std2' ? 'इयत्ता २ री' : '३ री ते ५ वी'}</div>
                     <div class="meta">विद्यार्थी: <b>${rec.students.length}</b> | दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
-                    <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
+                    ${recordBadgeHtml(rec)}
                     <div class="rec-actions">
                         <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
                         <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
@@ -963,7 +1119,7 @@ function renderAdminDashboard() {
             <h4>${rec.school} <span style="font-size:10px; color:#666;">(इतर जोडलेली)</span></h4>
             <div class="meta">शिक्षक: ${rec.teacher} | विद्यार्थी: <b>${rec.students.length}</b></div>
             <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
-            <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
+            ${recordBadgeHtml(rec)}
             <div class="rec-actions">
                 <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
                 <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
@@ -985,31 +1141,83 @@ function syncRecord(id, silent = false) {
     const rec = recs.find(r => r._id === id);
     if (!rec || rec.synced) return;
 
-    fetch(GS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(rec) })
-    .then(() => {
-        rec.synced = true; saveRecords(recs); 
-        if(isAdminAuthed()) renderAdminDashboard();
-        if(!silent) showToast('☁️ डेटा शीटवर सिंक झाला.');
-    }).catch(() => { if(!silent) showToast('⚠️ इंटरनेट तपासा. सिंक अयशस्वी.'); });
+    fetch(GS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(rec)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.status === 'duplicate') {
+            // Server already has a record for this school+teacher (most likely
+            // saved from another device before this one got a chance to sync).
+            // Stop retrying it automatically and flag it for the admin to resolve.
+            rec.syncConflict = true;
+            saveRecords(recs);
+            if (isAdminAuthed()) renderAdminDashboard();
+            if (!silent) showToast('⚠️ ही नोंद क्लाउडवर आधीच दुसऱ्या डिव्हाइसवरून सिंक झालेली आढळली (डुप्लिकेट). Admin पॅनलमध्ये तपासा.');
+            fetchFromCloud(true); // pull the server's version so local data matches
+            return;
+        }
+        if (data && data.status === 'ok') {
+            rec.synced = true;
+            delete rec.syncConflict;
+            saveRecords(recs);
+            if (isAdminAuthed()) renderAdminDashboard();
+            if (!silent) showToast('☁️ डेटा शीटवर सिंक झाला.');
+            return;
+        }
+        if (!silent) showToast('⚠️ सिंक अयशस्वी: ' + ((data && data.message) || 'अज्ञात त्रुटी'));
+    })
+    .catch(() => { if(!silent) showToast('⚠️ इंटरनेट तपासा. सिंक अयशस्वी.'); });
+}
+
+/**
+ * Deletes a record from the Google Sheet backend. Returns a Promise<boolean>.
+ */
+function deleteRecordFromCloud(id) {
+    if (!navigator.onLine) return Promise.resolve(false);
+    return fetch(GS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete_record', _id: id })
+    })
+    .then(res => res.json())
+    .then(data => !!(data && data.status === 'ok'))
+    .catch(() => false);
 }
 
 document.getElementById('syncAllBtn').addEventListener('click', () => {
-    const pending = loadRecords().filter(r => !r.synced);
-    if (!pending.length) { showToast('सर्व डेटा आधीच सिंक झाला आहे.'); return; }
+    const pending = loadRecords().filter(r => !r.synced && !r.syncConflict);
+    const conflicts = loadRecords().filter(r => r.syncConflict);
+    if (!pending.length) {
+        showToast(conflicts.length ? `⚠️ ${conflicts.length} नोंदी डुप्लिकेट म्हणून अडकल्या आहेत. त्या हाताळा.` : 'सर्व डेटा आधीच सिंक झाला आहे.');
+        return;
+    }
     showToast(`${pending.length} नोंदी सिंक करत आहे...`);
     pending.forEach(r => syncRecord(r._id, false));
 });
 
+/**
+ * Pulls records (and the shared admin PIN) from the Google Sheet backend.
+ * Returns a Promise so callers can `await` it -- this is what lets the app
+ * (a) block the admin gate until the shared PIN has been checked, and
+ * (b) re-check for duplicate teacher entries against the very latest data
+ * right before locking/saving the form.
+ * Concurrent calls are coalesced into a single in-flight request.
+ */
 function fetchFromCloud(silent = false) {
     if (!navigator.onLine) { 
         if(!silent) showToast('इंटरनेट चालू नाही. कृपया नेटवर्क तपासा.'); 
-        return; 
+        return Promise.resolve(false);
     }
+
+    if (cloudFetchInFlight) return cloudFetchInFlight;
 
     if(!silent) showToast('⏳ Google Sheet वरून डेटा आणत आहे...');
     else document.getElementById('autoSyncIcon').style.display = 'inline-block';
 
-    fetch(GS_URL)
+    cloudFetchInFlight = fetch(GS_URL)
     .then(res => res.json())
     .then(data => {
         document.getElementById('autoSyncIcon').style.display = 'none';
@@ -1042,14 +1250,20 @@ function fetchFromCloud(silent = false) {
                 }
                 if(!silent) showToast(`✅ यश! डेटा अपडेट झाला.`);
             }
+            return true;
         } else {
             if(!silent) showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
+            return false;
         }
     })
     .catch(err => {
         document.getElementById('autoSyncIcon').style.display = 'none';
         if(!silent) showToast('❌ डेटा आणताना त्रुटी आली. नेटवर्क तपासा.');
-    });
+        return false;
+    })
+    .finally(() => { cloudFetchInFlight = null; });
+
+    return cloudFetchInFlight;
 }
 
 /* ============================================================
@@ -1287,7 +1501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNetStatus();
         updatePendingCount();
         
-        // Auto pull from Cloud silently on app open
+        // Auto pull from Cloud silently on app open (records + shared PIN)
         if(navigator.onLine) fetchFromCloud(true);
     } catch(e) {
         console.error("Initialization Error:", e);
