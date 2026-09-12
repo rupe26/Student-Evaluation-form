@@ -93,7 +93,7 @@
   .grand-total-block { border: 2px solid #28a745; padding: 15px; border-radius: 5px; background-color: #f8fff9; margin-bottom: 15px;}
   .grand-total-block h4 { color: #28a745; margin: 0 0 10px 0; border-bottom: 1px solid #28a745; padding-bottom: 5px;}
 
-  /* Mobile Responsive Cards for Table */
+  /* Mobile Responsive Cards */
   @media (max-width: 850px) {
     table.nipun-table thead { display: none; }
     table.nipun-table, table.nipun-table tbody, table.nipun-table tr, table.nipun-table td { display: block; width: 100%; }
@@ -116,6 +116,7 @@
   .btn-secondary { background: #eef1f8; color: var(--navy2); }
   .btn-danger { background: #fdeceb; color: var(--danger); }
   .btn-ok { background: #e7f6ee; color: var(--ok); }
+  .btn-cloud { background: #007bff; color: #fff; }
   .btn-sm { padding: 7px 12px; font-size: 12.5px; border-radius: 6px; }
 
   /* Admin Cards */
@@ -280,8 +281,10 @@
         <!-- Dashboard Aggregate Summary Widget -->
         <div id="adminOverallSummary"></div>
 
+        <!-- Sync & Fetch Controls -->
         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-          <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white; flex:1;">☁️ सर्व प्रलंबित सिंक करा</button>
+          <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white; flex:1;">☁️ सर्व प्रलंबित सिंक करा (Push)</button>
+          <button class="btn-cloud btn-sm" id="fetchCloudBtn" style="flex:1;">📥 Google Sheet वरून डेटा आणा (Fetch)</button>
           <button class="btn-secondary btn-sm" id="exportJsonBtn" style="flex:1;">⬇️ JSON बॅकअप घ्या</button>
         </div>
         
@@ -291,10 +294,10 @@
       <!-- Settings -->
       <div class="subview" id="settingsView">
         <div class="rec-card">
-          <h3>☁️ Google Apps Script (Sheet Sync)</h3>
-          <p class="small-note">नोंदी Google Sheet मध्ये पाठवण्यासाठी Apps Script URL इथे टाका.</p>
+          <h3>☁️ Google Apps Script (Two-Way Sync & Fetch)</h3>
+          <p class="small-note">नोंदी Google Sheet मध्ये पाठवण्यासाठी व शीटमधून डाऊनलोड करण्यासाठी ही URL वापरली जाईल.</p>
           <label>Web App URL</label>
-          <input type="text" id="gsUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          <input type="text" id="gsUrl" value="https://script.google.com/macros/s/AKfycbyQ6DLKiAFCSepJ8l8oC5yAGZG4b8VuRpvTy8gBKMRkeApvkmpi7fexlW5L9VRlY8Xu/exec" placeholder="https://script.google.com/macros/s/.../exec">
           <button class="btn-primary" id="saveSettingsBtn" style="margin-top:15px; width:100%;">सेटिंग्ज जतन करा</button>
         </div>
       </div>
@@ -370,22 +373,6 @@ const teacherData = {
 
 const competencyData = {
     std2: {
-        reading: { A: ["११. ..."], B: ["५. ..."], C: ["१. ..."] }, // Truncated for brevity, normally full texts
-        writing: { A: ["१२. ..."], B: ["६. ..."], C: ["१. ..."] },
-        numeracy: { A: ["९. ..."], B: ["५. ..."], C: ["१. ..."] },
-        operations: { A: ["११. ..."], B: ["५. ..."], C: ["१. ..."] }
-    },
-    std3to5: {
-        reading: { A: ["१२. ..."], B: ["६. ..."], C: ["१. ..."] },
-        writing: { A: ["१४. ..."], B: ["८. ..."], C: ["१. ..."] },
-        numeracy: { A: ["१८. ..."], B: ["१०. ..."], C: ["१. ..."] },
-        operations: { A: ["२४. ..."], B: ["१४. ..."], C: ["१. ..."] }
-    }
-};
-
-/* Full competency load manually overriding brevity */
-Object.assign(competencyData, {
-    std2: {
         reading: { A: ["११. परिचित मजकूरातील ३-५ सोप्या शब्दांनी व तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह, आरोह अवरोहासह व योग्य गतीने वाचतो.", "१२. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.", "१३. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो.", "१४. अपरिचित मजकूरातील ४-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह, आरोह अवरोहासह व योग्य गतीने वाचतो."], B: ["५. मजकूरातील साध्या विरामचिन्हांची दखल घेतो.", "६. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.", "७. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो.", "८. परिचित मजकूरातील २-३ सोप्या शब्दांनी तयार झालेली लहान वाक्ये अचूकपणे, विरामचिन्हांसह वाचतो.", "९. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली लहान वाक्ये वाचतो.", "१०. परिचित मजकूरातील ३-५ सोप्या शब्दांनी तयार झालेली जोडाक्षरयुक्त लहान वाक्ये वाचतो."], C: ["१. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी (उच्चार) ओळखत नाही.", "२. वर्णमालेतील सर्व अक्षरे व त्याचे ध्वनी (उच्चार) ओळखतो.", "३. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे दोन अक्षरी शब्द वाचतो.", "४. सर्व अक्षरे आणि स्वरचिन्हे यांच्या मदतीने तयार होणारे तीन ते चार अक्षरी शब्द वाचतो."] },
         writing: { A: ["१२. २-३ सोप्या शब्दांची दोन ते तीन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.", "१३. २-३ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त विरामचिन्हांसह तीन ते चार वाक्ये ऐकून लिहितो.", "१४. श्रुतलेखनाकरिता ४-५ शब्दांची एक ते दोन सोपी वाक्ये योग्य गतीने लिहितो.", "१५. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त एक वाक्य विरामचिन्हांसह ऐकून लिहितो.", "१६. ४-५ सोपे शब्द व सोपी जोडाक्षरे यांनी युक्त २-३ वाक्ये विरामचिन्हांसह योग्य गतीने लिहितो."], B: ["६. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो.", "७. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरे, स्वरचिन्हेयुक्त व जोडाक्षरयुक्त शब्द लिहितो.", "८. २-३ शब्दांची व सोप्या जोडाक्षरांची एक ते दोन सोपी वाक्ये पाहून लिहितो.", "९. ४-५ सोपे शब्द व सोपी जोडाक्षरे असलेली दोन ते तीन वाक्ये पाहून लिहितो.", "१०. २-३ शब्दांची एक ते दोन सोपी वाक्ये ऐकून योग्य गतीने लिहितो.", "११. २-३ शब्द व जोडाक्षरयुक्त एक ते दोन वाक्ये ऐकून विरामचिन्हांसह योग्य गतीने लिहितो."], C: ["१. वर्णमालेतील अक्षरे पाहून लिहू शकत नाही.", "२. वर्णमालेतील अक्षरे पाहून लिहितो.", "३. सोपे शब्द पाहून लिहितो.", "४. श्रुतलेखन करताना वर्णमालेतील सर्व अक्षरांच्या ध्वनीला ऐकून अक्षरे लिहितो.", "५. श्रुतलेखन करताना वर्णमालेतील काही अक्षरे व स्वरचिन्हे वापरून शब्द लिहितो."] },
         numeracy: { A: ["९. २० पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो.", "१०. १० ते २० पर्यंतच्या संख्या ओळखतो/वाचतो.", "११. १० ते २० पर्यंत संख्या लिहितो. (अंकी)"], B: ["५. ० ते ९ पर्यंतच्या संख्या ओळखतो/वाचतो.", "६. ० ते ९ पर्यंत संख्या लिहितो. (अंकी)", "७. १० ते २० संख्यानामे क्रमाने म्हणतो.", "८. १० ते २० पर्यंतच्या वस्तू मोजतो."], C: ["१. ० ते ९ संख्यानामे क्रमाने म्हणता येत नाहीत.", "२. ० ते ९ संख्यानामे क्रमाने म्हणतो.", "३. ० ते ९ पर्यंतच्या वस्तू मोजतो.", "४. ९ पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो."] },
@@ -397,21 +384,32 @@ Object.assign(competencyData, {
         numeracy: { A: ["१८. ० ते ९ संख्यानामे लिहितो. (अक्षरी)", "१९. ० ते २० संख्यानामे लिहितो. (अक्षरी)", "२०. ० ते ५० संख्यानामे लिहितो. (अक्षरी)"], B: ["१०. १० ते २० पर्यंतच्या संख्या ओळखतो/वाचतो.", "११. १० ते २० पर्यंत संख्या लिहितो. (अंकी)", "१२. २१ ते ५० पर्यंतची संख्यानामे क्रमाने म्हणतो.", "१३. स्थानिक किंमत संकल्पना वापरून २१ ते ५० पर्यंतच्या संख्या ओळखतो/वाचतो.", "१४. २१ ते ५० पर्यंतच्या संख्या लिहितो. (अंकी)", "१५. ५१ ते ९९ पर्यंतची संख्यानामे क्रमाने म्हणतो.", "१६. स्थानिक किंमत संकल्पना वापरून ५१ ते ९९ पर्यंतच्या संख्या ओळखतो.", "१७. ५१ ते ९९ पर्यंतच्या संख्या लिहितो. (अंकी)"], C: ["१. ० ते ९ संख्यानामे क्रमाने म्हणता येत नाहीत.", "२. ० ते ९ संख्यानामे क्रमाने म्हणतो.", "३. ० ते ९ पर्यंतच्या वस्तू मोजतो.", "४. ९ पर्यंतच्या वस्तूंच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो.", "५. ० ते ९ पर्यंतच्या संख्या ओळखतो/वाचतो.", "६. ० ते ९ पर्यंत संख्या लिहितो. (अंकी)", "७. १० ते २० संख्यानामे क्रमाने म्हणतो.", "८. १० ते २० पर्यंतच्या वस्तू मोजतो.", "९. २० पर्यंतच्या वस्तूच्या समूहातून ठराविक संख्येएवढ्या वस्तू काढून दाखवितो."] },
         operations: { A: ["२४. स्थानिक किमत संकल्पना वापरून ० ते ९९ पर्यंतच्या संख्यांची बेरीज करतो. (बिनहातच्याची)", "२५. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची बेरीज करतो. (हातच्याची)", "२६. ० ते ९९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२७. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (बिनहातच्याची)", "२८. स्थानिक किमत संकल्पना वापरून ९९ पर्यंतच्या संख्यांची वजाबाकी करतो. (हातच्याची)", "२९. ९९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], B: ["१४. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "१5. ० ते २० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१६. ० ते २० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "१७. ० ते २० पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१८. ० ते २० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१९. ० ते २० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "२०. ० ते ५० पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "२१. ० ते ५० पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "२२. ० ते ५० पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "२३. ० ते ५० पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."], C: ["१. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करता येत नाही.", "२. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरीज करतो.", "३. ० ते ४ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "४. ० ते ४ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "५. ० ते ४ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "६. ० ते ४ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "७. ० ते ४ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो.", "८. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून बेरजेची उदाहरणे सोडवितो.", "९. ० ते ९ पर्यंतच्या संख्यांची बेरजेचे चिन्ह वापरून बेरीज करतो.", "१०. ० ते ९ पर्यंतच्या संख्यांचा वापर करून बेरजेची शाब्दिक उदाहरणे सोडवितो.", "११. ० ते ९ पर्यंतच्या संख्यांची मूर्त वस्तूंचा वापर करून वजाबाकी करतो.", "१२. ० ते ९ पर्यंतच्या संख्यांची वजाबाकीचे चिन्ह वापरून वजाबाकी करतो.", "१३. ० ते ९ पर्यंतच्या संख्यांचा वापर करून वजाबाकीची शाब्दिक उदाहरणे सोडवितो."] }
     }
-});
+};
 
 /* ============================================================
-   SYSTEM LOGIC & STATE
+   SYSTEM LOGIC & STATE (Integrated URL)
    ============================================================ */
 const LS_RECORDS = "nipun_records_v1";
 const LS_CONFIG = "nipun_config_v1";
 const LS_PIN = "nipun_admin_pin_v1";
 const SS_AUTH = "nipun_admin_authed_v1";
+const DEFAULT_GS_URL = "https://script.google.com/macros/s/AKfycbyQ6DLKiAFCSepJ8l8oC5yAGZG4b8VuRpvTy8gBKMRkeApvkmpi7fexlW5L9VRlY8Xu/exec";
 let rowCount = 0;
 
 function loadRecords() { try { return JSON.parse(localStorage.getItem(LS_RECORDS)) || []; } catch(e) { return []; } }
 function saveRecords(recs) { localStorage.setItem(LS_RECORDS, JSON.stringify(recs)); updatePendingCount(); }
 function getRecordBySchool(schoolName) { return loadRecords().find(r => r.school === schoolName); }
-function loadConfig() { try { return JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; } catch(e) { return {}; } }
+
+function loadConfig() { 
+    try { 
+        let cfg = JSON.parse(localStorage.getItem(LS_CONFIG)) || {}; 
+        if (!cfg.gsUrl) cfg.gsUrl = DEFAULT_GS_URL;
+        return cfg;
+    } catch(e) { 
+        return { gsUrl: DEFAULT_GS_URL }; 
+    } 
+}
+
 function saveConfig(cfg) { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); }
 function updatePendingCount() { document.getElementById('pendingCount').textContent = loadRecords().filter(r => !r.synced).length; }
 
@@ -420,7 +418,7 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
 function updateNetStatus() {
@@ -428,7 +426,7 @@ function updateNetStatus() {
   if (navigator.onLine) { dot.className = 'dot on'; txt.textContent = 'ऑनलाइन'; }
   else { dot.className = 'dot off'; txt.textContent = 'ऑफलाइन'; }
 }
-window.addEventListener('online', () => { updateNetStatus(); showToast('इंटरनेट चालू झाले! प्रलंबित नोंदी सिंक करा.'); });
+window.addEventListener('online', () => { updateNetStatus(); showToast('इंटरनेट चालू झाले! डेटा सिंक करता येईल.'); });
 window.addEventListener('offline', updateNetStatus);
 
 /* Tabs Handling */
@@ -443,7 +441,6 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
         refreshAdminGate();
         document.getElementById('formToolbar').style.display = 'none';
     } else {
-        // Only show form toolbar if it's not locked
         const sVal = document.getElementById('schoolSelect').value;
         const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
         const existing = getRecordBySchool(schoolName);
@@ -604,7 +601,7 @@ function populateFormWithRecord(rec) {
     document.getElementById('evalTaluka').value = rec.taluka;
     document.getElementById('evalDistrict').value = rec.district;
     document.getElementById('classSelect').value = rec.evalGroup;
-    updateClassGroup(true); // update text but don't clear rows
+    updateClassGroup(true);
     
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
@@ -782,13 +779,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     saveRecords(recs);
     showToast('✅ नोंद जतन झाली! फॉर्म आता लॉक झाला आहे.');
     
-    // Auto Sync
     if(navigator.onLine) syncRecord(rec._id);
-    
-    // Refresh the form to show locked state immediately
     onSchoolChange(); 
 });
-
 
 /* ============================================================
    ADMIN GATE & KENDRA DASHBOARD
@@ -841,7 +834,6 @@ function unlockSchoolRecord(id, name) {
         saveRecords(loadRecords().filter(r => r._id !== id));
         renderAdminDashboard();
         showToast(`🔓 ${name} अनलॉक केले.`);
-        // Refresh form view if same school is selected
         const sVal = document.getElementById('schoolSelect').value;
         const currentFormSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
         if(currentFormSchool === name) { onSchoolChange(); }
@@ -895,7 +887,6 @@ function renderAdminDashboard() {
     let gridHtml = '<h3 style="color:var(--navy); margin-bottom:10px;">शाळा निहाय स्थिती (School-wise Status)</h3>';
     gridHtml += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:15px;">';
     
-    // Process Official 23 Schools
     schoolList.forEach(school => {
         const rec = getRecordBySchool(school.name);
         if (rec) {
@@ -919,7 +910,6 @@ function renderAdminDashboard() {
         }
     });
 
-    // Process 'Other' added schools if any exist
     const officialNames = schoolList.map(s => s.name);
     const otherRecs = allRecs.filter(r => !officialNames.includes(r.school));
     
@@ -941,10 +931,11 @@ function renderAdminDashboard() {
     wrap.innerHTML = gridHtml;
 }
 
-
 /* ============================================================
-   GOOGLE SYNC
+   GOOGLE SYNC (PUSH) & FETCH (PULL)
    ============================================================ */
+
+// 1. Send data to Google Sheet (Sync / Push)
 function syncRecord(id) {
     const cfg = loadConfig();
     if (!cfg.gsUrl) { showToast('सेटिंग्जमध्ये Google Sheet URL टाकलेली नाही.'); return; }
@@ -957,7 +948,7 @@ function syncRecord(id) {
     .then(() => {
         rec.synced = true; saveRecords(recs); 
         if(isAdminAuthed()) renderAdminDashboard();
-        showToast('☁️ डेटा सिंक झाला.');
+        showToast('☁️ डेटा शीटवर सिंक झाला.');
     }).catch(() => showToast('⚠️ इंटरनेट तपासा. सिंक अयशस्वी.'));
 }
 
@@ -968,10 +959,50 @@ document.getElementById('syncAllBtn').addEventListener('click', () => {
     pending.forEach(r => syncRecord(r._id));
 });
 
+// 2. Download data from Google Sheet (Fetch / Pull)
+document.getElementById('fetchCloudBtn').addEventListener('click', () => {
+    const cfg = loadConfig();
+    if (!cfg.gsUrl) { showToast('कृपया आधी सेटिंग्जमध्ये Web App URL टाका.'); return; }
+    if (!navigator.onLine) { showToast('इंटरनेट चालू नाही. कृपया नेटवर्क तपासा.'); return; }
+
+    showToast('⏳ Google Sheet वरून डेटा आणत आहे...');
+
+    fetch(cfg.gsUrl)
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.status === 'ok' && Array.isArray(data.records)) {
+            const localRecs = loadRecords();
+            let addedCount = 0;
+            
+            data.records.forEach(cloudRec => {
+                const localIndex = localRecs.findIndex(r => r.school === cloudRec.school);
+                if (localIndex >= 0) {
+                    if(localRecs[localIndex].synced) {
+                        localRecs[localIndex] = cloudRec;
+                    }
+                } else {
+                    localRecs.push(cloudRec);
+                    addedCount++;
+                }
+            });
+
+            saveRecords(localRecs);
+            renderAdminDashboard();
+            showToast(`✅ यश! ${data.records.length} शाळांचा डेटा शीटवरून अपडेट झाला.`);
+            onSchoolChange();
+        } else {
+            showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('❌ डेटा आणताना त्रुटी आली. Apps Script Web App URL तपासा.');
+    });
+});
+
 document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     saveConfig({ gsUrl: document.getElementById('gsUrl').value.trim() }); showToast('सेटिंग्ज जतन झाल्या.');
 });
-const cfg = loadConfig(); if(cfg.gsUrl) document.getElementById('gsUrl').value = cfg.gsUrl;
 
 /* ============================================================
    PRINT GENERATOR (PDF OUTPUT)
@@ -1041,7 +1072,6 @@ function printRecord(id) {
     if (r) generatePDFFromData(r, true);
 }
 
-// Allow operator to print live form ONLY if they have loaded a locked school
 document.getElementById('printLiveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
     const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
