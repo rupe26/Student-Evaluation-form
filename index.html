@@ -167,11 +167,6 @@
   <!-- ===================== 1. FORM VIEW ===================== -->
   <div class="view active" id="formView">
     
-    <!-- Locked Alert -->
-    <div id="lockedBanner">
-      🔒 या शाळेची माहिती भरून पूर्ण झाली असून ती लॉक करण्यात आली आहे.<br>बदल करण्यासाठी केंद्रप्रमुखांशी संपर्क साधा.
-    </div>
-
     <div class="section">
       <h3 class="section-title">शाळा व शिक्षकाची माहिती</h3>
       <div class="form-grid">
@@ -313,8 +308,8 @@
 </main>
 
 <div class="toolbar" id="formToolbar">
-  <button class="btn-secondary" id="printLiveBtn" style="flex: 1;">🖨️ रिपोर्ट</button>
-  <button class="btn-secondary" id="printLevelLiveBtn" style="flex: 1; background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+  <button class="btn-secondary" id="printLiveBtn" style="flex: 1; display:none;">🖨️ रिपोर्ट</button>
+  <button class="btn-secondary" id="printLevelLiveBtn" style="flex: 1; background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5; display:none;">🖨️ स्तर निहाय</button>
   <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff; flex: 2;">💾 जतन करा (Save)</button>
 </div>
 
@@ -385,12 +380,14 @@ const competencyData = {
 const LS_RECORDS = "nipun_records_v1";
 const LS_PIN = "nipun_admin_pin_v1";
 const SS_AUTH = "nipun_admin_authed_v1";
-const GS_URL = "https://script.google.com/macros/s/AKfycbyQ6DLKiAFCSepJ8l8oC5yAGZG4b8VuRpvTy8gBKMRkeApvkmpi7fexlW5L9VRlY8Xu/exec";
+
+// ⚠️ IMPORTANT: REPLACE THIS URL WITH YOUR NEW GOOGLE APPS SCRIPT URL ⚠️
+const GS_URL = "YOUR_NEW_WEB_APP_URL_HERE";
+
 let rowCount = 0;
 
 function loadRecords() { try { return JSON.parse(localStorage.getItem(LS_RECORDS)) || []; } catch(e) { return []; } }
 function saveRecords(recs) { localStorage.setItem(LS_RECORDS, JSON.stringify(recs)); updatePendingCount(); }
-function getRecordBySchool(schoolName) { return loadRecords().find(r => r.school === schoolName); }
 function updatePendingCount() { document.getElementById('pendingCount').textContent = loadRecords().filter(r => !r.synced).length; }
 
 let toastTimer;
@@ -432,10 +429,9 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
     } else {
         const sVal = document.getElementById('schoolSelect').value;
         const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
-        const existing = getRecordBySchool(schoolName);
-        if(!existing && schoolName !== '') {
+        if(schoolName !== '') {
              document.getElementById('formToolbar').style.display = 'flex';
-        } else if (schoolName === '') {
+        } else {
              document.getElementById('formToolbar').style.display = 'none';
         }
     }
@@ -453,7 +449,7 @@ document.querySelectorAll('#adminContent .btn-sm[data-subview]').forEach(btn => 
 });
 
 /* ============================================================
-   FORM BUILDER & LOCKING FUNCTIONS
+   FORM BUILDER & NO-LOCKING LOGIC
    ============================================================ */
 function buildSchoolSelect() {
     const sel = document.getElementById('schoolSelect');
@@ -483,7 +479,6 @@ function setFormLock(isLocked) {
     document.getElementById('schoolSelect').disabled = false;
     document.getElementById('otherSchoolName').disabled = isLocked;
     
-    document.getElementById('lockedBanner').style.display = isLocked ? 'block' : 'none';
     document.getElementById('csvBtnWrap').style.display = isLocked ? 'none' : 'flex';
     
     if(isLocked) {
@@ -503,7 +498,6 @@ function onSchoolChange() {
 
         wrap.style.display = (sVal === 'other') ? 'block' : 'none';
 
-        // Handle Default unselected
         if (sVal === "") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
             resetFormFields();
@@ -512,49 +506,41 @@ function onSchoolChange() {
             return;
         }
 
-        // Handle Custom "Other" School
         if (sVal === "other") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- शिक्षक निवडा --</option><option value="other_teacher">इतर (यादीत नसल्यास)</option>';
             resetFormFields();
             setFormLock(false);
             document.getElementById('formToolbar').style.display = 'flex';
-            checkOtherSchool(); // Verify if they already typed an existing name
+            checkOtherSchool(); 
             return;
         }
 
-        // Standard School Selected (Safely parse the value as an integer)
         const schoolIndex = parseInt(sVal, 10);
         if (isNaN(schoolIndex) || !schoolList[schoolIndex]) return; 
 
         const schoolName = schoolList[schoolIndex].name;
-        const existingRec = getRecordBySchool(schoolName);
-
-        if (existingRec) {
-            populateFormWithRecord(existingRec);
-            setFormLock(true);
-        } else {
-            const teachers = teacherData[schoolName];
-            const tSel = document.getElementById('teacherSelect');
-            tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
-            
-            if (teachers) {
-                teachers.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t.name;
-                    opt.text = `${t.name} (${t.desig})`;
-                    tSel.appendChild(opt);
-                });
-            }
-            
-            const oOpt = document.createElement('option');
-            oOpt.value = "other_teacher";
-            oOpt.text = "इतर (यादीत नसल्यास)";
-            tSel.appendChild(oOpt);
-
-            resetFormFields();
-            setFormLock(false);
-            document.getElementById('formToolbar').style.display = 'flex';
+        
+        const teachers = teacherData[schoolName];
+        const tSel = document.getElementById('teacherSelect');
+        tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
+        
+        if (teachers) {
+            teachers.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.text = `${t.name} (${t.desig})`;
+                tSel.appendChild(opt);
+            });
         }
+        
+        const oOpt = document.createElement('option');
+        oOpt.value = "other_teacher";
+        oOpt.text = "इतर (यादीत नसल्यास)";
+        tSel.appendChild(oOpt);
+
+        resetFormFields();
+        setFormLock(false); 
+        document.getElementById('formToolbar').style.display = 'flex';
     } catch(err) {
         console.error("onSchoolChange Error:", err);
     }
@@ -562,12 +548,7 @@ function onSchoolChange() {
 
 function checkOtherSchool() {
     const typedName = document.getElementById('otherSchoolName').value.trim();
-    const existingRec = getRecordBySchool(typedName);
-
-    if (typedName !== "" && existingRec) {
-        populateFormWithRecord(existingRec);
-        setFormLock(true);
-    } else if (typedName !== "") {
+    if (typedName !== "") {
         setFormLock(false);
         document.getElementById('formToolbar').style.display = 'flex';
     }
@@ -661,37 +642,6 @@ function resetFormFields() {
     document.getElementById('evalTaluka').value = 'अंबाजोगाई';
     document.getElementById('classSelect').value = 'std2';
     updateClassGroup(false);
-}
-
-function populateFormWithRecord(rec) {
-    document.getElementById('teacherSelect').innerHTML = `<option value="${rec.teacher}">${rec.teacher}</option>`;
-    document.getElementById('teacherSelect').value = rec.teacher;
-    document.getElementById('evalDate').value = rec.date;
-    document.getElementById('evalCenter').value = rec.center;
-    document.getElementById('evalTaluka').value = rec.taluka;
-    document.getElementById('evalDistrict').value = rec.district;
-    document.getElementById('classSelect').value = rec.evalGroup;
-    updateClassGroup(true);
-    
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
-    rowCount = 0;
-
-    rec.students.forEach(s => {
-        rowCount++;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td data-label="क्र." style="text-align:center; font-weight:bold;">${rowCount}</td>
-            <td data-label="विद्यार्थ्याचे नाव"><input type="text" class="student-name" value="${s.name}" disabled></td>
-            <td data-label="इयत्ता">${createClassDropdown(s.className, true)}</td>
-            <td data-label="वाचन">${createDropdown('reading', s.reading, true)}</td>
-            <td data-label="लेखन">${createDropdown('writing', s.writing, true)}</td>
-            <td data-label="संख्याज्ञान">${createDropdown('numeracy', s.numeracy, true)}</td>
-            <td data-label="गणितीय क्रिया">${createDropdown('operations', s.operations, true)}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    generateSummary();
 }
 
 /* CSV Upload Logic */
@@ -811,19 +761,21 @@ function generateSummary() {
     document.getElementById('summaryContent').innerHTML = buildSummaryHTML(data, false);
 }
 
-/* Form Save & Lock */
+/* Form Save */
 document.getElementById('saveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
     const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
+    const teacherName = document.getElementById('teacherSelect').value;
     
     if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा किंवा टाईप करा.'); return; }
+    if (!teacherName) { showToast('कृपया शिक्षकाचे नाव निवडा.'); return; }
     
     const rec = {
         _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
         _savedAt: new Date().toISOString(),
         synced: false,
         school: schoolName,
-        teacher: document.getElementById('teacherSelect').value,
+        teacher: teacherName,
         date: document.getElementById('evalDate').value,
         center: document.getElementById('evalCenter').value,
         taluka: document.getElementById('evalTaluka').value,
@@ -850,9 +802,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const recs = loadRecords();
     recs.unshift(rec);
     saveRecords(recs);
-    showToast('✅ नोंद जतन झाली! फॉर्म आता लॉक झाला आहे.');
+    
+    showToast('✅ नोंद जतन झाली! पुढील शिक्षकाची माहिती भरू शकता.');
     
     if(navigator.onLine) syncRecord(rec._id, false);
+    
+    document.getElementById('schoolSelect').value = "";
     onSchoolChange(); 
 });
 
@@ -864,7 +819,6 @@ function getPin() { return localStorage.getItem(LS_PIN) || ''; }
 function setPin(p) { localStorage.setItem(LS_PIN, p); }
 function isAdminAuthed() { return sessionStorage.getItem(SS_AUTH) === '1'; }
 
-// NEW: Function to send PIN to Google Sheet
 function syncPinToCloud(pin) {
     if (!navigator.onLine) return;
     const payload = { action: "update_pin", pin: pin };
@@ -890,7 +844,7 @@ document.getElementById('setupPinBtn').addEventListener('click', () => {
   if (!/^[0-9]{4}$/.test(p1)) { showToast('PIN फक्त ४ अंकी नंबर असावा.'); return; }
   if (p1 !== p2) { showToast('PIN जुळत नाहीत.'); return; }
   setPin(p1); 
-  syncPinToCloud(p1); // <-- Now syncs online
+  syncPinToCloud(p1); 
   sessionStorage.setItem(SS_AUTH, '1'); showToast('PIN सेट झाला.'); refreshAdminGate();
 });
 
@@ -913,19 +867,16 @@ document.getElementById('changePinBtn').addEventListener('click', () => {
     if (!/^[0-9]{4}$/.test(n1)) { showToast('नवीन PIN ४ अंकी असावा.'); return; }
     if (n1 !== n2) { showToast('नवीन PIN जुळत नाहीत.'); return; }
     setPin(n1); 
-    syncPinToCloud(n1); // <-- Now syncs online
+    syncPinToCloud(n1); 
     document.getElementById('oldPinInput').value = ''; document.getElementById('newPinInput1').value = ''; document.getElementById('newPinInput2').value = '';
     showToast('✅ PIN यशस्वीरित्या बदलला.');
 });
 
 function unlockSchoolRecord(id, name) {
-    if(confirm(`⚠️ तुम्हाला खात्री आहे का की "${name}" ची माहिती अनलॉक करायची आहे?\n\nयामुळे आधी भरलेला डेटा डिलीट होईल आणि ऑपरेटरला पुन्हा सुरुवातीपासून माहिती भरावी लागेल.`)) {
+    if(confirm(`⚠️ तुम्हाला खात्री आहे का की "${name}" ची ही नोंद डिलीट करायची आहे?`)) {
         saveRecords(loadRecords().filter(r => r._id !== id));
         renderAdminDashboard();
-        showToast(`🔓 ${name} अनलॉक केले.`);
-        const sVal = document.getElementById('schoolSelect').value;
-        const currentFormSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
-        if(currentFormSchool === name) { onSchoolChange(); }
+        showToast(`🗑️ नोंद डिलीट केली.`);
     }
 }
 
@@ -952,7 +903,7 @@ function renderAdminDashboard() {
     <div class="grand-total-block" style="background:#fff; border-color:var(--navy); padding:15px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; border-bottom:2px solid var(--navy); margin-bottom:10px; padding-bottom:5px;">
             <h4 style="color:var(--navy); margin:0;">📊 केंद्राचा एकूण अहवाल</h4>
-            <span style="font-weight:bold; color:var(--navy2);">पूर्ण शाळा: ${allRecs.length} / ${schoolList.length} | एकूण विद्यार्थी: ${studentCount}</span>
+            <span style="font-weight:bold; color:var(--navy2);">एकूण नोंदी: ${allRecs.length} | एकूण विद्यार्थी: ${studentCount}</span>
         </div>`;
         
     if (studentCount > 0) {
@@ -972,25 +923,28 @@ function renderAdminDashboard() {
     summaryHtml += `</div>`;
     document.getElementById('adminOverallSummary').innerHTML = summaryHtml;
     
-    // School-wise Grid
+    // School-wise Grid (Multiple Teachers Support)
     let gridHtml = '<h3 style="color:var(--navy); margin-bottom:10px;">शाळा निहाय स्थिती (School-wise Status)</h3>';
     gridHtml += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:15px;">';
     
     schoolList.forEach(school => {
-        const rec = getRecordBySchool(school.name);
-        if (rec) {
-            gridHtml += `
-            <div class="rec-card" style="border-left: 5px solid var(--ok);">
-                <h4>${school.name}</h4>
-                <div class="meta">शिक्षक: ${rec.teacher} | विद्यार्थी: <b>${rec.students.length}</b></div>
-                <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
-                <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
-                <div class="rec-actions">
-                    <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ मुख्य रिपोर्ट</button>
-                    <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय यादी</button>
-                    <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🔓 अनलॉक</button>
-                </div>
-            </div>`;
+        const schoolRecs = allRecs.filter(r => r.school === school.name);
+        
+        if (schoolRecs.length > 0) {
+            schoolRecs.forEach(rec => {
+                gridHtml += `
+                <div class="rec-card" style="border-left: 5px solid var(--ok);">
+                    <h4>${school.name}</h4>
+                    <div class="meta">शिक्षक: ${rec.teacher} | गट: ${rec.evalGroup === 'std2' ? 'इयत्ता २ री' : '३ री ते ५ वी'}</div>
+                    <div class="meta">विद्यार्थी: <b>${rec.students.length}</b> | दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
+                    <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
+                    <div class="rec-actions">
+                        <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
+                        <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+                        <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🗑️ डिलीट</button>
+                    </div>
+                </div>`;
+            });
         } else {
             gridHtml += `
             <div class="rec-card" style="border-left: 5px solid var(--danger); background:#fff9f9;">
@@ -1011,9 +965,9 @@ function renderAdminDashboard() {
             <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
             <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
             <div class="rec-actions">
-                <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ मुख्य रिपोर्ट</button>
-                <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय यादी</button>
-                <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🔓 अनलॉक</button>
+                <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
+                <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+                <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🗑️ डिलीट</button>
             </div>
         </div>`;
     });
@@ -1061,7 +1015,6 @@ function fetchFromCloud(silent = false) {
         document.getElementById('autoSyncIcon').style.display = 'none';
         if (data && data.status === 'ok') {
             
-            // NEW: Sync PIN from Cloud to Local Device
             if (data.pin && data.pin !== getPin()) {
                 setPin(data.pin);
             }
@@ -1071,7 +1024,7 @@ function fetchFromCloud(silent = false) {
                 let isUpdated = false;
                 
                 data.records.forEach(cloudRec => {
-                    const localIndex = localRecs.findIndex(r => r.school === cloudRec.school);
+                    const localIndex = localRecs.findIndex(r => r._id === cloudRec._id);
                     if (localIndex >= 0) {
                         if(localRecs[localIndex].synced) {
                             localRecs[localIndex] = cloudRec;
@@ -1086,13 +1039,8 @@ function fetchFromCloud(silent = false) {
                 if(isUpdated) {
                     saveRecords(localRecs);
                     if(isAdminAuthed()) renderAdminDashboard();
-                    const sVal = document.getElementById('schoolSelect').value;
-                    const currentSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
-                    if (currentSchool && getRecordBySchool(currentSchool)) {
-                        setFormLock(true);
-                    }
                 }
-                if(!silent) showToast(`✅ यश! ${data.records.length} शाळांचा डेटा अपडेट झाला.`);
+                if(!silent) showToast(`✅ यश! डेटा अपडेट झाला.`);
             }
         } else {
             if(!silent) showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
@@ -1103,8 +1051,6 @@ function fetchFromCloud(silent = false) {
         if(!silent) showToast('❌ डेटा आणताना त्रुटी आली. नेटवर्क तपासा.');
     });
 }
-
-document.getElementById('fetchCloudBtn') && document.getElementById('fetchCloudBtn').addEventListener('click', () => fetchFromCloud(false));
 
 /* ============================================================
    PRINT GENERATORS
@@ -1176,15 +1122,6 @@ function printRecord(id) {
     if (r) generatePDFFromData(r, true);
 }
 
-document.getElementById('printLiveBtn').addEventListener('click', () => {
-    const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
-    const rec = getRecordBySchool(schoolName);
-    if(rec) generatePDFFromData(rec, true);
-    else showToast('माहिती सेव्ह केल्यावरच PDF काढता येईल.');
-});
-
-
 /* 2. Level-Wise List (स्तर निहाय यादी) */
 function printLevelWiseReport(id) {
     const r = loadRecords().find(x => x._id === id);
@@ -1252,14 +1189,6 @@ function printLevelWiseReport(id) {
     setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
 }
 
-document.getElementById('printLevelLiveBtn').addEventListener('click', () => {
-    const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
-    const rec = getRecordBySchool(schoolName);
-    if(rec) printLevelWiseReport(rec._id);
-    else showToast('माहिती सेव्ह केल्यावरच स्तर निहाय यादी काढता येईल.');
-});
-
 
 /* 3. Overall Consolidated Report */
 function printConsolidatedReport() {
@@ -1306,7 +1235,7 @@ function printConsolidatedReport() {
         <h2>केंद्रस्तर मूल्यमापन - एकत्रित अहवाल</h2>
         
         <div class="info-box">
-            <b>एकूण पूर्ण शाळा:</b> ${allRecs.length} / ${schoolList.length} &nbsp;&nbsp;|&nbsp;&nbsp; 
+            <b>एकूण नोंदी:</b> ${allRecs.length} &nbsp;&nbsp;|&nbsp;&nbsp; 
             <b>एकूण तपासलेले विद्यार्थी:</b> ${studentCount} &nbsp;&nbsp;|&nbsp;&nbsp; 
             <b>अहवाल दिनांक:</b> ${new Date().toLocaleDateString('mr-IN')}
         </div>
@@ -1322,7 +1251,7 @@ function printConsolidatedReport() {
             </tbody>
         </table>
 
-        <h3 style="margin-top:30px;">🏫 शाळा निहाय प्रगती</h3>
+        <h3 style="margin-top:30px;">🏫 शाळा आणि शिक्षक निहाय प्रगती</h3>
         <table>
             <thead><tr><th style="width:5%;">क्र.</th><th style="width:40%;">शाळेचे नाव</th><th style="width:30%;">वर्गशिक्षक</th><th style="width:10%;">विद्यार्थी संख्या</th><th style="width:15%;">नोंदणी दिनांक</th></tr></thead>
             <tbody>${schoolRows}</tbody>
