@@ -181,7 +181,7 @@
         </div>
         <div id="otherSchoolWrap" style="display:none;">
           <label>शाळेचे नाव (टाईप करा)</label>
-          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव" oninput="onSchoolChange()">
+          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव" oninput="checkOtherSchool()">
         </div>
         <div>
           <label>वर्गशिक्षक *</label>
@@ -431,7 +431,7 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
         document.getElementById('formToolbar').style.display = 'none';
     } else {
         const sVal = document.getElementById('schoolSelect').value;
-        const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+        const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
         const existing = getRecordBySchool(schoolName);
         if(!existing && schoolName !== '') {
              document.getElementById('formToolbar').style.display = 'flex';
@@ -500,9 +500,9 @@ function onSchoolChange() {
         const sel = document.getElementById('schoolSelect');
         const wrap = document.getElementById('otherSchoolWrap');
         const sVal = sel.value;
-        
+
         wrap.style.display = (sVal === 'other') ? 'block' : 'none';
-        
+
         // Handle Default unselected
         if (sVal === "") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
@@ -514,26 +514,21 @@ function onSchoolChange() {
 
         // Handle Custom "Other" School
         if (sVal === "other") {
-            const typedName = document.getElementById('otherSchoolName').value.trim();
-            const existingRec = getRecordBySchool(typedName);
-            
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- शिक्षक निवडा --</option><option value="other_teacher">इतर (यादीत नसल्यास)</option>';
-            
-            if (typedName !== "" && existingRec) {
-                populateFormWithRecord(existingRec);
-                setFormLock(true);
-            } else {
-                resetFormFields();
-                setFormLock(false);
-                document.getElementById('formToolbar').style.display = 'flex';
-            }
+            resetFormFields();
+            setFormLock(false);
+            document.getElementById('formToolbar').style.display = 'flex';
+            checkOtherSchool(); // Verify if they already typed an existing name
             return;
         }
 
-        // Standard School Selected
-        const schoolName = schoolList[sVal].name;
+        // Standard School Selected (Safely parse the value as an integer)
+        const schoolIndex = parseInt(sVal, 10);
+        if (isNaN(schoolIndex) || !schoolList[schoolIndex]) return; 
+
+        const schoolName = schoolList[schoolIndex].name;
         const existingRec = getRecordBySchool(schoolName);
-        
+
         if (existingRec) {
             populateFormWithRecord(existingRec);
             setFormLock(true);
@@ -541,6 +536,7 @@ function onSchoolChange() {
             const teachers = teacherData[schoolName];
             const tSel = document.getElementById('teacherSelect');
             tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
+            
             if (teachers) {
                 teachers.forEach(t => {
                     const opt = document.createElement('option');
@@ -549,17 +545,31 @@ function onSchoolChange() {
                     tSel.appendChild(opt);
                 });
             }
+            
             const oOpt = document.createElement('option');
             oOpt.value = "other_teacher";
             oOpt.text = "इतर (यादीत नसल्यास)";
             tSel.appendChild(oOpt);
-            
+
             resetFormFields();
             setFormLock(false);
             document.getElementById('formToolbar').style.display = 'flex';
         }
     } catch(err) {
-        console.error(err);
+        console.error("onSchoolChange Error:", err);
+    }
+}
+
+function checkOtherSchool() {
+    const typedName = document.getElementById('otherSchoolName').value.trim();
+    const existingRec = getRecordBySchool(typedName);
+
+    if (typedName !== "" && existingRec) {
+        populateFormWithRecord(existingRec);
+        setFormLock(true);
+    } else if (typedName !== "") {
+        setFormLock(false);
+        document.getElementById('formToolbar').style.display = 'flex';
     }
 }
 
@@ -804,7 +814,7 @@ function generateSummary() {
 /* Form Save & Lock */
 document.getElementById('saveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[sVal].name : '');
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
     
     if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा किंवा टाईप करा.'); return; }
     
@@ -898,7 +908,7 @@ function unlockSchoolRecord(id, name) {
         renderAdminDashboard();
         showToast(`🔓 ${name} अनलॉक केले.`);
         const sVal = document.getElementById('schoolSelect').value;
-        const currentFormSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+        const currentFormSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
         if(currentFormSchool === name) { onSchoolChange(); }
     }
 }
@@ -1054,7 +1064,7 @@ function fetchFromCloud(silent = false) {
                 saveRecords(localRecs);
                 if(isAdminAuthed()) renderAdminDashboard();
                 const sVal = document.getElementById('schoolSelect').value;
-                const currentSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+                const currentSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
                 if (currentSchool && getRecordBySchool(currentSchool)) {
                     setFormLock(true);
                 }
@@ -1070,7 +1080,7 @@ function fetchFromCloud(silent = false) {
     });
 }
 
-document.getElementById('fetchCloudBtn').addEventListener('click', () => fetchFromCloud(false));
+document.getElementById('fetchCloudBtn') && document.getElementById('fetchCloudBtn').addEventListener('click', () => fetchFromCloud(false));
 
 /* ============================================================
    PRINT GENERATORS
@@ -1144,7 +1154,7 @@ function printRecord(id) {
 
 document.getElementById('printLiveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
     const rec = getRecordBySchool(schoolName);
     if(rec) generatePDFFromData(rec, true);
     else showToast('माहिती सेव्ह केल्यावरच PDF काढता येईल.');
@@ -1220,7 +1230,7 @@ function printLevelWiseReport(id) {
 
 document.getElementById('printLevelLiveBtn').addEventListener('click', () => {
     const sVal = document.getElementById('schoolSelect').value;
-    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
     const rec = getRecordBySchool(schoolName);
     if(rec) printLevelWiseReport(rec._id);
     else showToast('माहिती सेव्ह केल्यावरच स्तर निहाय यादी काढता येईल.');
