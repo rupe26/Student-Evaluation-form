@@ -109,7 +109,7 @@
   }
   .toolbar button { flex: 1; }
   button {
-    cursor: pointer; border: none; border-radius: 8px; padding: 11px 15px; font-size: 14px; font-weight: 700;
+    cursor: pointer; border: none; border-radius: 8px; padding: 11px 10px; font-size: 13.5px; font-weight: 700;
     display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s;
   }
   .btn-primary { background: var(--navy); color: #fff; }
@@ -126,7 +126,7 @@
   .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 700; margin-top:5px; }
   .badge.synced { background: #e7f6ee; color: var(--ok); }
   .badge.pending { background: #fff4e2; color: var(--pending); }
-  .rec-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .rec-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
   
   .small-note { font-size: 12px; color: #7a8296; line-height: 1.5; }
   
@@ -282,7 +282,7 @@
 
         <!-- Print Overall Consolidated Report & Sync Controls -->
         <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-          <button class="btn-primary btn-sm" onclick="printConsolidatedReport()" style="flex:1; background:var(--navy2); font-size:14px; padding:10px;">🖨️ केंद्राचा एकूण अहवाल प्रिंट करा</button>
+          <button class="btn-primary btn-sm" onclick="printConsolidatedReport()" style="flex:1; background:var(--navy2); font-size:14px; padding:10px;">🖨️ केंद्राचा एकूण अहवाल</button>
           <button class="btn-ok btn-sm" id="syncAllBtn" style="background:#1e8e5a; color:white; flex:1;">☁️ सर्व सिंक करा (Push)</button>
           <button class="btn-cloud btn-sm" id="fetchCloudBtn" style="flex:1;">📥 शीटवरून आणा (Fetch)</button>
           <button class="btn-secondary btn-sm" id="exportJsonBtn" style="flex:1;">⬇️ JSON बॅकअप</button>
@@ -310,8 +310,9 @@
 </main>
 
 <div class="toolbar" id="formToolbar">
-  <button class="btn-secondary" id="printLiveBtn" style="flex: 0.5;">🖨️ PDF</button>
-  <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff; flex: 2;">💾 जतन करा (Save & Lock)</button>
+  <button class="btn-secondary" id="printLiveBtn" style="flex: 1;">🖨️ रिपोर्ट</button>
+  <button class="btn-secondary" id="printLevelLiveBtn" style="flex: 1; background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+  <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff; flex: 2;">💾 जतन करा (Save)</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -376,7 +377,7 @@ const competencyData = {
 };
 
 /* ============================================================
-   SYSTEM LOGIC & STATE (Integrated URL)
+   SYSTEM LOGIC & STATE
    ============================================================ */
 const LS_RECORDS = "nipun_records_v1";
 const LS_PIN = "nipun_admin_pin_v1";
@@ -873,8 +874,9 @@ function renderAdminDashboard() {
                 <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
                 <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
                 <div class="rec-actions">
-                    <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ PDF प्रिंट</button>
-                    <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🔓 अनलॉक (Reset)</button>
+                    <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ मुख्य रिपोर्ट</button>
+                    <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय यादी</button>
+                    <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🔓 अनलॉक</button>
                 </div>
             </div>`;
         } else {
@@ -897,8 +899,9 @@ function renderAdminDashboard() {
             <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
             <span class="badge ${rec.synced ? 'synced' : 'pending'}">${rec.synced ? '☁️ सिंक झाले' : '⏳ प्रलंबित सिंक'}</span>
             <div class="rec-actions">
-                <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ PDF प्रिंट</button>
-                <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🔓 अनलॉक (Reset)</button>
+                <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ मुख्य रिपोर्ट</button>
+                <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय यादी</button>
+                <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🔓 अनलॉक</button>
             </div>
         </div>`;
     });
@@ -971,8 +974,10 @@ document.getElementById('fetchCloudBtn').addEventListener('click', () => {
 });
 
 /* ============================================================
-   PRINT GENERATORS (INDIVIDUAL & CONSOLIDATED PDF)
+   PRINT GENERATORS
    ============================================================ */
+
+/* 1. Main PDF (Raw data + summary) */
 function generatePDFFromData(r, showGrandTotal) {
     let tableRows = r.students.map((s, i) => `
         <tr>
@@ -1046,7 +1051,84 @@ document.getElementById('printLiveBtn').addEventListener('click', () => {
     else showToast('माहिती सेव्ह केल्यावरच PDF काढता येईल.');
 });
 
-/* Print Overall Consolidated Report */
+
+/* 2. Level-Wise List (स्तर निहाय यादी) */
+function printLevelWiseReport(id) {
+    const r = loadRecords().find(x => x._id === id);
+    if (!r) return;
+
+    const subjects = [
+        { key: 'reading', label: 'वाचन' }, { key: 'writing', label: 'लेखन' },
+        { key: 'numeracy', label: 'संख्याज्ञान' }, { key: 'operations', label: 'गणितीय क्रिया' }
+    ];
+
+    let htmlContent = '';
+    subjects.forEach(subj => {
+        let groupA = r.students.filter(s => s[subj.key].startsWith('A')).map(s => s.name);
+        let groupB = r.students.filter(s => s[subj.key].startsWith('B')).map(s => s.name);
+        let groupC = r.students.filter(s => s[subj.key].startsWith('C')).map(s => s.name);
+
+        htmlContent += `
+            <h3 class="subj-title">${subj.label} - स्तर निहाय यादी</h3>
+            <table class="level-table">
+                <thead>
+                    <tr>
+                        <th style="width:33%; background:#e8f4ec; color:#1e8e5a; text-align:center;">गट A (प्रगत) - ${groupA.length} विद्यार्थी</th>
+                        <th style="width:33%; background:#fff4e2; color:#c67c00; text-align:center;">गट B (मध्यम) - ${groupB.length} विद्यार्थी</th>
+                        <th style="width:33%; background:#fdeceb; color:#c0392b; text-align:center;">गट C (आरंभिक) - ${groupC.length} विद्यार्थी</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="vertical-align:top;">${groupA.length ? groupA.map((n, i) => `<div>${i+1}. ${n}</div>`).join('') : '<span style="color:#999; display:block; text-align:center;">निरंक</span>'}</td>
+                        <td style="vertical-align:top;">${groupB.length ? groupB.map((n, i) => `<div>${i+1}. ${n}</div>`).join('') : '<span style="color:#999; display:block; text-align:center;">निरंक</span>'}</td>
+                        <td style="vertical-align:top;">${groupC.length ? groupC.map((n, i) => `<div>${i+1}. ${n}</div>`).join('') : '<span style="color:#999; display:block; text-align:center;">निरंक</span>'}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    });
+
+    const html = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>Level Wise List - ${r.school}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; font-size: 13px; }
+        h1, h2 { text-align: center; color: #0056b3; margin: 5px 0; }
+        .info-box { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8f9fa; }
+        .subj-title { background: #0056b3; color: white; padding: 5px 10px; border-radius: 4px; margin-top: 20px; font-size: 15px; text-align:center; }
+        .level-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+        .level-table th, .level-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .level-table td div { padding: 4px 0; border-bottom: 1px dashed #eee; font-size: 13.5px; }
+        .level-table td div:last-child { border-bottom: none; }
+        @media print { button { display: none; } }
+    </style></head><body>
+        <h1>मिशन निपुण बीड</h1>
+        <h2>स्तर निहाय विद्यार्थी यादी (Level-wise List)</h2>
+        <div class="info-box">
+            <div><b>शाळा:</b> ${r.school || '-'}</div>
+            <div><b>वर्गशिक्षक:</b> ${r.teacher || '-'}</div>
+            <div><b>दिनांक:</b> ${r.date || '-'}</div>
+            <div><b>गट:</b> ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ वी'}</div>
+        </div>
+        ${htmlContent}
+        <div style="text-align:center; margin-top:30px;"><button style="padding:10px 20px; background:#0056b3; color:white; border:none; cursor:pointer;" onclick="window.print()">🖨️ PDF म्हणून जतन करा</button></div>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if(!w) { showToast('पॉप-अप ब्लॉक झाला. परवानगी द्या.'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
+}
+
+document.getElementById('printLevelLiveBtn').addEventListener('click', () => {
+    const sVal = document.getElementById('schoolSelect').value;
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
+    const rec = getRecordBySchool(schoolName);
+    if(rec) printLevelWiseReport(rec._id);
+    else showToast('माहिती सेव्ह केल्यावरच स्तर निहाय यादी काढता येईल.');
+});
+
+
+/* 3. Overall Consolidated Report */
 function printConsolidatedReport() {
     const allRecs = loadRecords();
     if (allRecs.length === 0) {
@@ -1119,7 +1201,7 @@ function printConsolidatedReport() {
     </body></html>`;
 
     const w = window.open('', '_blank');
-    if(!w) { showToast('पॉप-अप ब्लॉक झाला. परवानगी द्या.'); return; }
+    if(!w) { showToast('पॉप-अप ব্লক झाला. परवानगी द्या.'); return; }
     w.document.open(); w.document.write(html); w.document.close();
     setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
 }
