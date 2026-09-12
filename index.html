@@ -410,8 +410,7 @@ function updateNetStatus() {
 window.addEventListener('online', () => { 
     updateNetStatus(); 
     showToast('इंटरनेट चालू झाले! डेटा सिंक होत आहे...');
-    fetchFromCloud(true); // Auto fetch silently when network is back
-    // Also auto push pending records silently
+    fetchFromCloud(true);
     const pending = loadRecords().filter(r => !r.synced);
     if(pending.length > 0) {
         pending.forEach(r => syncRecord(r._id, true));
@@ -467,7 +466,6 @@ function setFormLock(isLocked) {
     document.getElementById('lockedBanner').style.display = isLocked ? 'block' : 'none';
     document.getElementById('csvBtnWrap').style.display = isLocked ? 'none' : 'flex';
     
-    // Hide default Save button, but show Print buttons if locked
     if(isLocked) {
         document.getElementById('formToolbar').style.display = 'flex';
         document.getElementById('saveBtn').style.display = 'none';
@@ -936,7 +934,6 @@ function renderAdminDashboard() {
    GOOGLE AUTO-SYNC (PUSH) & AUTO-FETCH (PULL)
    ============================================================ */
 
-// 1. Send data to Google Sheet (Sync / Push)
 function syncRecord(id, silent = false) {
     const recs = loadRecords();
     const rec = recs.find(r => r._id === id);
@@ -957,7 +954,6 @@ document.getElementById('syncAllBtn').addEventListener('click', () => {
     pending.forEach(r => syncRecord(r._id, false));
 });
 
-// 2. Fetch data from Google Sheet (Auto-Fetch)
 function fetchFromCloud(silent = false) {
     if (!navigator.onLine) { 
         if(!silent) showToast('इंटरनेट चालू नाही. कृपया नेटवर्क तपासा.'); 
@@ -991,16 +987,13 @@ function fetchFromCloud(silent = false) {
             if(isUpdated) {
                 saveRecords(localRecs);
                 if(isAdminAuthed()) renderAdminDashboard();
-                
-                // Immediately update lock status on current view
                 const sVal = document.getElementById('schoolSelect').value;
                 const currentSchool = sVal === 'other' ? document.getElementById('otherSchoolName').value : (sVal !== '' ? schoolList[sVal].name : '');
                 if (currentSchool && getRecordBySchool(currentSchool)) {
                     setFormLock(true);
                 }
             }
-            
-            if(!silent) showToast(`✅ यश! ${data.records.length} शाळांचा डेटा शीटवरून अपडेट झाला.`);
+            if(!silent) showToast(`✅ यश! ${data.records.length} शाळांचा डेटा अपडेट झाला.`);
         } else {
             if(!silent) showToast('⚠️ Google Sheet मध्ये कोणताही डेटा सापडला नाही.');
         }
@@ -1011,7 +1004,6 @@ function fetchFromCloud(silent = false) {
     });
 }
 
-// Keep the manual button for Force Fetch
 document.getElementById('fetchCloudBtn').addEventListener('click', () => fetchFromCloud(false));
 
 /* ============================================================
@@ -1259,16 +1251,16 @@ document.getElementById('exportJsonBtn').addEventListener('click', () => {
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
 // Startup Initialization - Auto Fetch Silently
-buildSchoolSelect();
-resetFormFields();
-updateNetStatus();
-updatePendingCount();
+try {
+    buildSchoolSelect();
+    resetFormFields();
+    updateNetStatus();
+    updatePendingCount();
+    
+    // Auto pull from Cloud silently on app open
+    if(navigator.onLine) fetchFromCloud(true);
+} catch(e) { console.error("Init err:", e); }
 
-// Auto pull from Cloud silently on app open
-if(navigator.onLine) {
-    fetchFromCloud(true);
-}
 </script>
 </body>
 </html>
-
