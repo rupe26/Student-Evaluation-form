@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>मिशन निपुण बीड - विद्यार्थी मूल्यमापन तक्ता</title>
+
+<!-- PWA Meta Tags -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0056b3">
+<link rel="apple-touch-icon" href="1000738232.png">
+
 <style>
   :root {
     --navy: #0056b3;
@@ -219,7 +225,15 @@
             <!-- Rows injected via JS -->
         </tbody>
       </table>
-      <button class="btn-secondary" onclick="addRow()">➕ आणखी एक विद्यार्थी जोडा</button>
+      
+      <!-- ADDED CSV UPLOAD BUTTONS -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn-secondary" onclick="addRow()">➕ आणखी एक विद्यार्थी जोडा</button>
+        <button class="btn-secondary" style="background:#e8f4ec; color:#1e8e5a; border: 1px solid #1e8e5a;" onclick="document.getElementById('csvInput').click()">📁 CSV अपलोड करा</button>
+        <input type="file" id="csvInput" accept=".csv" style="display:none;" onchange="processCSV(event)">
+      </div>
+      <p class="small-note" style="margin-top:8px;"><b>टीप:</b> जर तुम्ही CSV फाईल अपलोड करत असाल, तर फाईलच्या <b>पहिल्या रकान्यात (Column A)</b> विद्यार्थ्यांची नावे असावीत.</p>
+
     </div>
 
     <div class="summary-container" id="summaryBox">
@@ -724,6 +738,69 @@ function updateClassGroup() {
     generateSummary();
 }
 
+/* ============================================================
+   CSV UPLOAD LOGIC
+   ============================================================ */
+function processCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        // Split by line and remove empty lines
+        const rows = text.split('\n').map(row => row.trim()).filter(row => row.length > 0);
+        
+        // Skip header if first row contains common header words
+        let startIndex = 0;
+        if(rows.length > 0 && (rows[0].includes('नाव') || rows[0].includes('Name') || rows[0].includes('name'))) {
+            startIndex = 1;
+        }
+
+        const names = [];
+        for (let i = startIndex; i < rows.length; i++) {
+            const cols = rows[i].split(',');
+            if (cols[0]) {
+                // Remove quotes if present
+                let name = cols[0].replace(/^"|"$/g, '').trim();
+                if(name) names.push(name);
+            }
+        }
+
+        if (names.length === 0) {
+            showToast('CSV मध्ये विद्यार्थ्यांची नावे सापडली नाहीत.');
+            event.target.value = '';
+            return;
+        }
+
+        const nameInputs = document.querySelectorAll('#tableBody .student-name');
+        let inputIndex = 0;
+        
+        // Find the first empty row
+        while(inputIndex < nameInputs.length && nameInputs[inputIndex].value.trim() !== '') {
+            inputIndex++;
+        }
+
+        // Fill data
+        names.forEach(name => {
+            if (inputIndex < nameInputs.length) {
+                nameInputs[inputIndex].value = name;
+                inputIndex++;
+            } else {
+                // Add new row if we run out of empty inputs
+                addRow();
+                const newInputs = document.querySelectorAll('#tableBody .student-name');
+                newInputs[newInputs.length - 1].value = name;
+                inputIndex = newInputs.length;
+            }
+        });
+
+        showToast(`✅ ${names.length} विद्यार्थी यशस्वीरीत्या जोडले!`);
+        event.target.value = ''; // Reset file input
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
 function calculateSummaryData(rowsNodeList) {
     const classes = ["इयत्ता दुसरी", "इयत्ता तिसरी", "इयत्ता चौथी", "इयत्ता पाचवी"];
     const counts = {};
@@ -951,7 +1028,7 @@ function renderRecords() {
                 <h3>${r.school}</h3>
                 <span class="badge ${r.synced ? 'synced' : 'pending'}">${r.synced ? '☁️ सिंक' : '⏳ प्रलंबित'}</span>
             </div>
-            <div class="meta">शिक्षक: ${r.teacher || '-'} | गट: ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ वी'} | जतन: ${dt}</div>
+            <div class="meta">शिक्षक: ${r.teacher || '-'} | गट: ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ গুপ্ত'} | जतन: ${dt}</div>
             <div class="meta">विद्यार्थी संख्या: ${r.students.length}</div>
             <div class="rec-actions">
                 <button class="btn-primary btn-sm" onclick="printRecord('${r._id}')">🖨️ PDF काढा</button>
@@ -1112,6 +1189,19 @@ document.getElementById('exportJsonBtn').addEventListener('click', () => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'Nipun_Backup_' + Date.now() + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 });
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((registration) => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch((err) => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+  });
+}
 
 // Init
 buildSchoolSelect();
