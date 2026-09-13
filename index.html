@@ -141,7 +141,7 @@
   }
   .toast.show { opacity: 1; }
   
-  #lockedBanner { display:none; background:#ffeb3b; padding:12px; text-align:center; font-weight:bold; color:#b71c1c; margin-bottom:15px; border-radius:8px; font-size:14px; border: 1px solid #fbc02d; }
+  #editBanner { display:none; background:#eaf0fb; padding:12px; text-align:center; color:#004494; margin-bottom:15px; border-radius:8px; font-size:14px; border: 1px solid #b6ccf5; }
 </style>
 </head>
 <body>
@@ -168,7 +168,7 @@
   <!-- ===================== 1. FORM VIEW ===================== -->
   <div class="view active" id="formView">
     
-    <div id="lockedBanner"></div>
+    <div id="editBanner"></div>
 
     <div class="section">
       <h3 class="section-title">शाळा व शिक्षकाची माहिती</h3>
@@ -179,7 +179,7 @@
         </div>
         <div id="otherSchoolWrap" style="display:none;">
           <label>शाळेचे नाव (टाईप करा)</label>
-          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव" oninput="checkOtherSchool()">
+          <input type="text" id="otherSchoolName" placeholder="शाळेचे नाव">
         </div>
         <div>
           <label>वर्गशिक्षक *</label>
@@ -322,9 +322,9 @@
 </main>
 
 <div class="toolbar" id="formToolbar">
-  <button class="btn-secondary" id="printLiveBtn" style="flex: 1; display:none;">🖨️ रिपोर्ट</button>
-  <button class="btn-secondary" id="printLevelLiveBtn" style="flex: 1; background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5; display:none;">🖨️ स्तर निहाय</button>
-  <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff; flex: 2;">💾 जतन करा (Save)</button>
+  <button class="btn-secondary" id="printLiveBtn" style="flex: 1; padding: 11px 4px; font-size: 11.5px;">🖨️ अहवाल</button>
+  <button class="btn-secondary" id="printLevelLiveBtn" style="flex: 1; background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5; padding: 11px 4px; font-size: 11.5px;">🖨️ स्तर निहाय</button>
+  <button class="btn-ok" id="saveBtn" style="background:#1e8e5a; color:#fff; flex: 1.5; padding: 11px 4px; font-size: 13px;">💾 जतन (Save)</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -389,7 +389,7 @@ const competencyData = {
 };
 
 /* ============================================================
-   SYSTEM LOGIC & STATE (With Auto-Fetch & Form Drafts)
+   SYSTEM LOGIC & STATE (With Auto-Fetch & Form Drafts/Edits)
    ============================================================ */
 const LS_RECORDS = "nipun_records_v1";
 const LS_PIN = "nipun_admin_pin_v1";
@@ -401,9 +401,12 @@ const GS_URL = "https://script.google.com/macros/s/AKfycbxq6E9a8W19yym-QohuBi3f2
 let rowCount = 0;
 let cloudFetchInFlight = null;
 
-// Draft Storage variables (Prevents data loss on group change)
+// Draft & Edit Storage variables
 let currentClassGroup = 'std2';
-let formDrafts = { std2: [], std3to5: [] };
+let formDrafts = { 
+    std2: { id: null, students: [] }, 
+    std3to5: { id: null, students: [] } 
+};
 
 function loadRecords() { try { return JSON.parse(localStorage.getItem(LS_RECORDS)) || []; } catch(e) { return []; } }
 function saveRecords(recs) { localStorage.setItem(LS_RECORDS, JSON.stringify(recs)); updatePendingCount(); }
@@ -426,10 +429,7 @@ function updateNetStatus() {
 window.addEventListener('online', () => { 
     updateNetStatus(); 
     showToast('इंटरनेट चालू झाले! डेटा सिंक होत आहे...');
-    fetchFromCloud(true).then(() => {
-        const sVal = document.getElementById('schoolSelect').value;
-        if (sVal !== '' ) reValidateDuplicateForCurrentSelection();
-    });
+    fetchFromCloud(true); // Don't wipe UI drafts mid-edit
     const pending = loadRecords().filter(r => !r.synced && !r.syncConflict);
     if(pending.length > 0) {
         pending.forEach(r => syncRecord(r._id, true));
@@ -471,7 +471,7 @@ document.querySelectorAll('#adminContent .btn-sm[data-subview]').forEach(btn => 
 });
 
 /* ============================================================
-   FORM BUILDER, DRAFTS & NO-LOCKING LOGIC
+   FORM BUILDER & EDIT LOGIC
    ============================================================ */
 
 function buildSchoolSelect() {
@@ -495,72 +495,6 @@ function buildSchoolSelect() {
     sel.appendChild(otherOpt);
 }
 
-function setFormLock(isLocked) {
-    // Exclude #classSelect & #teacherSelect so they can be changed even when form is locked!
-    const inputs = document.querySelectorAll('#formView input:not(#csvInput):not(#otherSchoolName), #formView select:not(#schoolSelect):not(#teacherSelect):not(#classSelect)');
-    inputs.forEach(el => el.disabled = isLocked);
-    
-    document.getElementById('schoolSelect').disabled = false;
-    document.getElementById('teacherSelect').disabled = false;
-    document.getElementById('classSelect').disabled = false;
-    document.getElementById('otherSchoolName').disabled = isLocked;
-    
-    document.getElementById('csvBtnWrap').style.display = isLocked ? 'none' : 'flex';
-    
-    if(isLocked) {
-        document.getElementById('formToolbar').style.display = 'flex';
-        document.getElementById('saveBtn').style.display = 'none';
-    } else {
-        document.getElementById('formToolbar').style.display = 'flex';
-        document.getElementById('saveBtn').style.display = 'inline-flex';
-    }
-}
-
-function hideDuplicateBanner() {
-    const banner = document.getElementById('lockedBanner');
-    banner.style.display = 'none';
-    banner.innerHTML = '';
-}
-
-function showDuplicateBanner(rec) {
-    const banner = document.getElementById('lockedBanner');
-    const when = rec._savedAt ? new Date(rec._savedAt).toLocaleString('mr-IN') : '-';
-    const groupName = rec.evalGroup === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी';
-    banner.innerHTML = `🔒 या शाळेसाठी "${rec.teacher}" यांची <b>${groupName}</b> ची नोंद आधीच जतन केलेली आहे (${when}). पुन्हा नोंद करता येणार नाही. (दुसरा गट निवडण्यासाठी वरील 'मूल्यमापन गट' बदला)`;
-    banner.style.display = 'block';
-}
-
-/**
- * Checks whether the currently selected school + teacher + GROUP already
- * has a saved record, and locks the form to prevent accidental duplicate submission.
- */
-function checkDuplicateEntry(schoolName, teacherName) {
-    if (!schoolName || !teacherName || teacherName === 'other_teacher') {
-        hideDuplicateBanner();
-        setFormLock(false);
-        return false;
-    }
-    
-    const currentGroup = document.getElementById('classSelect').value;
-    const recs = loadRecords();
-    
-    const dup = recs.find(r =>
-        (r.school || '').trim() === schoolName.trim() &&
-        (r.teacher || '').trim() === teacherName.trim() &&
-        r.evalGroup === currentGroup
-    );
-    
-    if (dup) {
-        showDuplicateBanner(dup);
-        setFormLock(true);
-        return true;
-    } else {
-        hideDuplicateBanner();
-        setFormLock(false);
-        return false;
-    }
-}
-
 function getCurrentSchoolName() {
     const sVal = document.getElementById('schoolSelect').value;
     if (sVal === 'other') return document.getElementById('otherSchoolName').value.trim();
@@ -572,14 +506,38 @@ function getCurrentTeacherName() {
     return document.getElementById('teacherSelect').value;
 }
 
-async function reValidateDuplicateForCurrentSelection() {
+/** 
+ * Checks if records exist for the selected school & teacher.
+ * If yes, it loads them into formDrafts so the user can edit them.
+ */
+async function loadSavedDataForEditing() {
     const schoolName = getCurrentSchoolName();
     const teacherName = getCurrentTeacherName();
-    if (!schoolName || !teacherName || teacherName === 'other_teacher') return;
+    
+    if (!schoolName || !teacherName || teacherName === 'other_teacher') {
+        resetDrafts();
+        restoreFromDraft(currentClassGroup);
+        return;
+    }
+
     if (navigator.onLine) {
         try { await fetchFromCloud(true); } catch(e) {}
     }
-    checkDuplicateEntry(schoolName, teacherName);
+
+    const recs = loadRecords();
+    const r2 = recs.find(r => r.school === schoolName && r.teacher === teacherName && r.evalGroup === 'std2');
+    const r3 = recs.find(r => r.school === schoolName && r.teacher === teacherName && r.evalGroup === 'std3to5');
+
+    formDrafts.std2 = {
+        id: r2 ? r2._id : null,
+        students: r2 ? JSON.parse(JSON.stringify(r2.students)) : []
+    };
+    formDrafts.std3to5 = {
+        id: r3 ? r3._id : null,
+        students: r3 ? JSON.parse(JSON.stringify(r3.students)) : []
+    };
+
+    restoreFromDraft(currentClassGroup);
 }
 
 function onSchoolChange() {
@@ -593,8 +551,6 @@ function onSchoolChange() {
         if (sVal === "") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- आधी शाळा निवडा --</option>';
             resetFormFields();
-            hideDuplicateBanner();
-            setFormLock(false);
             document.getElementById('formToolbar').style.display = 'none';
             return;
         }
@@ -602,10 +558,7 @@ function onSchoolChange() {
         if (sVal === "other") {
             document.getElementById('teacherSelect').innerHTML = '<option value="">-- शिक्षक निवडा --</option><option value="other_teacher">इतर (यादीत नसल्यास)</option>';
             resetFormFields();
-            hideDuplicateBanner();
-            setFormLock(false);
             document.getElementById('formToolbar').style.display = 'flex';
-            checkOtherSchool(); 
             return;
         }
 
@@ -633,25 +586,9 @@ function onSchoolChange() {
         tSel.appendChild(oOpt);
 
         resetFormFields();
-        hideDuplicateBanner();
-        setFormLock(false); 
         document.getElementById('formToolbar').style.display = 'flex';
     } catch(err) {
         console.error("onSchoolChange Error:", err);
-    }
-}
-
-function checkOtherSchool() {
-    const typedName = document.getElementById('otherSchoolName').value.trim();
-    if (typedName !== "") {
-        const teacherName = getCurrentTeacherName();
-        if (teacherName && teacherName !== 'other_teacher') {
-            reValidateDuplicateForCurrentSelection();
-        } else {
-            hideDuplicateBanner();
-            setFormLock(false);
-        }
-        document.getElementById('formToolbar').style.display = 'flex';
     }
 }
 
@@ -667,15 +604,14 @@ function onTeacherChange() {
             sel.value = customName;
         } else {
             sel.value = "";
-            hideDuplicateBanner();
-            setFormLock(false);
             return;
         }
     }
-    reValidateDuplicateForCurrentSelection();
+    // Teacher is selected, try to load any previously saved data for them
+    loadSavedDataForEditing();
 }
 
-function createClassDropdown(selectedVal = "", disabled = false) {
+function createClassDropdown(selectedVal = "") {
     const group = document.getElementById('classSelect').value;
     let options = '<option value="">-निवडा-</option>';
     if (group === 'std2') {
@@ -685,7 +621,7 @@ function createClassDropdown(selectedVal = "", disabled = false) {
         options += `<option value="इयत्ता चौथी" ${selectedVal==='इयत्ता चौथी'?'selected':''}>इयत्ता चौथी</option>`;
         options += `<option value="इयत्ता पाचवी" ${selectedVal==='इयत्ता पाचवी'?'selected':''}>इयत्ता पाचवी</option>`;
     }
-    return `<select class="class-dropdown" title="इयत्ता निवडा" onchange="generateSummary()" ${disabled?'disabled':''}>${options}</select>`;
+    return `<select class="class-dropdown" title="इयत्ता निवडा" onchange="generateSummary()">${options}</select>`;
 }
 
 function generateOptGroup(groupLabel, dataArray, prefix, selectedVal) {
@@ -700,13 +636,13 @@ function generateOptGroup(groupLabel, dataArray, prefix, selectedVal) {
     return html;
 }
 
-function createDropdown(subject, selectedVal = "", disabled = false) {
+function createDropdown(subject, selectedVal = "") {
     const selectedClass = document.getElementById('classSelect').value;
     let opt = {A:[], B:[], C:[]};
     if(competencyData[selectedClass] && competencyData[selectedClass][subject]) {
         opt = competencyData[selectedClass][subject];
     }
-    let html = `<select class="competency-select" data-subject="${subject}" onchange="generateSummary()" ${disabled?'disabled':''}>`;
+    let html = `<select class="competency-select" data-subject="${subject}" onchange="generateSummary()">`;
     html += `<option value="">-- क्षमता निवडा --</option>`;
     html += generateOptGroup("गट A (प्रगत)", opt.A, "A", selectedVal);
     html += generateOptGroup("गट B (मध्यम)", opt.B, "B", selectedVal);
@@ -730,19 +666,20 @@ function addRow() {
     document.getElementById('tableBody').appendChild(tr);
 }
 
-/* ======== Form Draft System (Saves in browser when switching groups) ======== */
+/* ======== Form Draft & Edit System ======== */
 
 function saveCurrentToDraft() {
     const rows = document.querySelectorAll('#tableBody tr');
-    let draft = [];
+    let draftStudents = [];
+    
     rows.forEach(row => {
         const nameInput = row.querySelector('.student-name');
         const classDrop = row.querySelector('.class-dropdown');
         if(!nameInput || !classDrop) return;
-        const selects = row.querySelectorAll('.competency-select');
         
+        const selects = row.querySelectorAll('.competency-select');
         if(selects.length === 4) {
-            draft.push({
+            draftStudents.push({
                 name: nameInput.value,
                 className: classDrop.value,
                 reading: selects[0].value,
@@ -752,7 +689,7 @@ function saveCurrentToDraft() {
             });
         }
     });
-    formDrafts[currentClassGroup] = draft;
+    formDrafts[currentClassGroup].students = draftStudents;
 }
 
 function restoreFromDraft(group) {
@@ -760,8 +697,8 @@ function restoreFromDraft(group) {
     rowCount = 0;
     const draft = formDrafts[group];
     
-    if (draft && draft.length > 0) {
-        draft.forEach(student => {
+    if (draft && draft.students.length > 0) {
+        draft.students.forEach(student => {
             rowCount++;
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -779,6 +716,21 @@ function restoreFromDraft(group) {
     
     while(rowCount < 10) addRow();
     generateSummary();
+
+    // Toggle Banner & Update Button based on Edit Mode
+    const banner = document.getElementById('editBanner');
+    const saveBtn = document.getElementById('saveBtn');
+
+    if (draft.id) {
+        banner.innerHTML = `✏️ <b>माहिती उपलब्ध:</b> या गटाची नोंद आधीच जतन केलेली आहे. तुम्ही विद्यार्थी यादीत बदल करून पुन्हा अपडेट करू शकता.`;
+        banner.style.display = 'block';
+        saveBtn.innerHTML = '💾 अपडेट करा (Update)';
+        saveBtn.style.background = '#0056b3'; // Blue for update
+    } else {
+        banner.style.display = 'none';
+        saveBtn.innerHTML = '💾 जतन करा (Save)';
+        saveBtn.style.background = '#1e8e5a'; // Green for save
+    }
 }
 
 function updateClassGroup(preserveData = false) {
@@ -791,10 +743,16 @@ function updateClassGroup(preserveData = false) {
     document.getElementById('tableSubtitle').innerText = (newGroup === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी') + ' | विषय क्षेत्रेः वाचन, लेखन, संख्याज्ञान, गणितीय क्रिया';
     
     if (!preserveData) {
-        restoreFromDraft(newGroup);
         currentClassGroup = newGroup;
-        reValidateDuplicateForCurrentSelection();
+        restoreFromDraft(currentClassGroup);
     }
+}
+
+function resetDrafts() {
+    formDrafts = { 
+        std2: { id: null, students: [] }, 
+        std3to5: { id: null, students: [] } 
+    };
 }
 
 function resetFormFields() {
@@ -802,15 +760,10 @@ function resetFormFields() {
     document.getElementById('evalCenter').value = 'रविवार पेठ';
     document.getElementById('evalTaluka').value = 'अंबाजोगाई';
     document.getElementById('classSelect').value = 'std2';
-    
-    formDrafts = { std2: [], std3to5: [] };
     currentClassGroup = 'std2';
     
-    document.getElementById('tableBody').innerHTML = '';
-    rowCount = 0;
-    for(let i=0; i<10; i++) addRow();
-    
-    updateClassGroup(true); 
+    resetDrafts();
+    restoreFromDraft('std2');
 }
 
 /* CSV Upload Logic */
@@ -930,7 +883,43 @@ function generateSummary() {
     document.getElementById('summaryContent').innerHTML = buildSummaryHTML(data, false);
 }
 
-/* Form Save */
+/* ============================================================
+   LIVE FORM PRINTING (TEACHER VIEW)
+   ============================================================ */
+function getCurrentFormData() {
+    saveCurrentToDraft(); // Ensure draft has latest UI state
+    const sVal = document.getElementById('schoolSelect').value;
+    const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
+    const teacherName = document.getElementById('teacherSelect').value;
+    
+    return {
+        school: schoolName,
+        teacher: teacherName,
+        date: document.getElementById('evalDate').value,
+        center: document.getElementById('evalCenter').value,
+        taluka: document.getElementById('evalTaluka').value,
+        district: document.getElementById('evalDistrict').value,
+        evalGroup: currentClassGroup,
+        students: formDrafts[currentClassGroup].students.filter(s => s.name.trim() !== '' && s.className !== '')
+    };
+}
+
+document.getElementById('printLiveBtn').addEventListener('click', () => {
+    const data = getCurrentFormData();
+    if (!data.school || !data.teacher) { showToast('कृपया आधी शाळा आणि शिक्षक निवडा.'); return; }
+    if (data.students.length === 0) { showToast('किमान एका विद्यार्थ्याची माहिती भरणे आवश्यक आहे.'); return; }
+    generatePDFFromData(data, false); 
+});
+
+document.getElementById('printLevelLiveBtn').addEventListener('click', () => {
+    const data = getCurrentFormData();
+    if (!data.school || !data.teacher) { showToast('कृपया आधी शाळा आणि शिक्षक निवडा.'); return; }
+    if (data.students.length === 0) { showToast('किमान एका विद्यार्थ्याची माहिती भरणे आवश्यक आहे.'); return; }
+    generateLevelWisePDF(data);
+});
+
+
+/* Form Save & Update Logic */
 document.getElementById('saveBtn').addEventListener('click', async () => {
     const sVal = document.getElementById('schoolSelect').value;
     const schoolName = sVal === 'other' ? document.getElementById('otherSchoolName').value.trim() : (sVal !== '' ? schoolList[parseInt(sVal, 10)].name : '');
@@ -939,65 +928,75 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     if (!schoolName) { showToast('कृपया शाळेचे नाव निवडा किंवा टाईप करा.'); return; }
     if (!teacherName) { showToast('कृपया शिक्षकाचे नाव निवडा.'); return; }
 
-    if (navigator.onLine) {
-        try { await fetchFromCloud(true); } catch(e) {}
-    }
-    if (checkDuplicateEntry(schoolName, teacherName)) {
-        showToast('⚠️ या शिक्षकाची व गटाची नोंद आधीच जतन झालेली आहे.');
-        return;
-    }
-    
-    const rec = {
-        _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
-        _savedAt: new Date().toISOString(),
-        synced: false,
-        school: schoolName,
-        teacher: teacherName,
-        date: document.getElementById('evalDate').value,
-        center: document.getElementById('evalCenter').value,
-        taluka: document.getElementById('evalTaluka').value,
-        district: document.getElementById('evalDistrict').value,
-        evalGroup: currentClassGroup,
-        students: []
-    };
+    // Grab latest UI inputs into draft
+    saveCurrentToDraft();
+    const currentDraft = formDrafts[currentClassGroup];
+    const validStudents = currentDraft.students.filter(s => s.name.trim() !== '' && s.className !== '');
 
-    document.querySelectorAll('#tableBody tr').forEach(row => {
-        const name = row.querySelector('.student-name').value.trim();
-        const cls = row.querySelector('.class-dropdown').value;
-        if (name && cls) {
-            const selects = row.querySelectorAll('.competency-select');
-            rec.students.push({
-                name: name, className: cls,
-                reading: selects[0].value, writing: selects[1].value,
-                numeracy: selects[2].value, operations: selects[3].value
-            });
-        }
-    });
-
-    if (rec.students.length === 0) { showToast('किमान एका विद्यार्थ्याची संपूर्ण माहिती (नाव आणि इयत्ता) भरा.'); return; }
+    if (validStudents.length === 0) { 
+        showToast('किमान एका विद्यार्थ्याची संपूर्ण माहिती (नाव आणि इयत्ता) भरा.'); 
+        return; 
+    }
     
     const recs = loadRecords();
-    recs.unshift(rec);
+    let rec = null;
+    let isUpdate = false;
+
+    // If ID exists in draft, this is an update
+    if (currentDraft.id) {
+        rec = recs.find(r => r._id === currentDraft.id);
+        if (rec) {
+            rec.students = validStudents;
+            rec.date = document.getElementById('evalDate').value;
+            rec.center = document.getElementById('evalCenter').value;
+            rec.taluka = document.getElementById('evalTaluka').value;
+            rec.district = document.getElementById('evalDistrict').value;
+            rec._savedAt = new Date().toISOString();
+            rec.synced = false;
+            delete rec.syncConflict;
+            isUpdate = true;
+        }
+    }
+
+    // If no ID or record not found, create new
+    if (!rec) {
+        rec = {
+            _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+            _savedAt: new Date().toISOString(),
+            synced: false,
+            school: schoolName,
+            teacher: teacherName,
+            evalGroup: currentClassGroup,
+            date: document.getElementById('evalDate').value,
+            center: document.getElementById('evalCenter').value,
+            taluka: document.getElementById('evalTaluka').value,
+            district: document.getElementById('evalDistrict').value,
+            students: validStudents
+        };
+        recs.unshift(rec);
+        currentDraft.id = rec._id; // Track as edit for subsequent clicks
+    }
+
     saveRecords(recs);
-    
     if(navigator.onLine) syncRecord(rec._id, false);
     
-    // Clear the saved draft from memory
-    formDrafts[currentClassGroup] = [];
-    
+    // Check if other group is already filled for Prompting
     const otherGroup = currentClassGroup === 'std2' ? 'std3to5' : 'std2';
     const otherGroupName = otherGroup === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी';
+    const otherDraft = formDrafts[otherGroup];
     
-    const isOtherSaved = recs.some(r => r.school === schoolName && r.teacher === teacherName && r.evalGroup === otherGroup);
-    
-    if (!isOtherSaved) {
-        if (confirm(`✅ नोंद जतन झाली!\n\nयाच शिक्षकाची '${otherGroupName}' ची माहिती भरायची आहे का?\n(OK = होय, Cancel = नवीन शिक्षक निवडणार)`)) {
+    if (otherDraft.id) {
+        if (confirm(`✅ माहिती ${isUpdate ? 'अपडेट' : 'जतन'} झाली!\n\nयाच शिक्षकाची '${otherGroupName}' ची माहिती सुद्धा उपलब्ध आहे. तुम्हाला ती पाहायची/अपडेट करायची आहे का? (OK = होय)`)) {
             document.getElementById('classSelect').value = otherGroup;
             updateClassGroup(false);
-            return; // Stay on the same teacher, change to the other group
+            return;
         }
     } else {
-        showToast('✅ नोंद जतन झाली!');
+        if (confirm(`✅ माहिती ${isUpdate ? 'अपडेट' : 'जतन'} झाली!\n\nयाच शिक्षकाची '${otherGroupName}' ची नवीन माहिती भरायची आहे का? (OK = होय)`)) {
+            document.getElementById('classSelect').value = otherGroup;
+            updateClassGroup(false);
+            return;
+        }
     }
     
     // Default cleanup for next teacher
@@ -1128,10 +1127,10 @@ function renderAdminDashboard() {
     allRecs.forEach(r => {
         r.students.forEach(s => {
             studentCount++;
-            if (s.reading.startsWith('A')) gt.reading.A++; else if (s.reading.startsWith('B')) gt.reading.B++; else if (s.reading.startsWith('C')) gt.reading.C++;
-            if (s.writing.startsWith('A')) gt.writing.A++; else if (s.writing.startsWith('B')) gt.writing.B++; else if (s.writing.startsWith('C')) gt.writing.C++;
-            if (s.numeracy.startsWith('A')) gt.numeracy.A++; else if (s.numeracy.startsWith('B')) gt.numeracy.B++; else if (s.numeracy.startsWith('C')) gt.numeracy.C++;
-            if (s.operations.startsWith('A')) gt.operations.A++; else if (s.operations.startsWith('B')) gt.operations.B++; else if (s.operations.startsWith('C')) gt.operations.C++;
+            if ((s.reading||'').startsWith('A')) gt.reading.A++; else if ((s.reading||'').startsWith('B')) gt.reading.B++; else if ((s.reading||'').startsWith('C')) gt.reading.C++;
+            if ((s.writing||'').startsWith('A')) gt.writing.A++; else if ((s.writing||'').startsWith('B')) gt.writing.B++; else if ((s.writing||'').startsWith('C')) gt.writing.C++;
+            if ((s.numeracy||'').startsWith('A')) gt.numeracy.A++; else if ((s.numeracy||'').startsWith('B')) gt.numeracy.B++; else if ((s.numeracy||'').startsWith('C')) gt.numeracy.C++;
+            if ((s.operations||'').startsWith('A')) gt.operations.A++; else if ((s.operations||'').startsWith('B')) gt.operations.B++; else if ((s.operations||'').startsWith('C')) gt.operations.C++;
         });
     });
 
@@ -1340,10 +1339,10 @@ function generatePDFFromData(r, showGrandTotal) {
             <td style="text-align:center;">${i+1}</td>
             <td>${s.name}</td>
             <td>${s.className}</td>
-            <td>${s.reading.replace(/^[A-C] - /,'')}</td>
-            <td>${s.writing.replace(/^[A-C] - /,'')}</td>
-            <td>${s.numeracy.replace(/^[A-C] - /,'')}</td>
-            <td>${s.operations.replace(/^[A-C] - /,'')}</td>
+            <td>${(s.reading||'').replace(/^[A-C] - /,'')}</td>
+            <td>${(s.writing||'').replace(/^[A-C] - /,'')}</td>
+            <td>${(s.numeracy||'').replace(/^[A-C] - /,'')}</td>
+            <td>${(s.operations||'').replace(/^[A-C] - /,'')}</td>
         </tr>
     `).join('');
 
@@ -1400,10 +1399,7 @@ function printRecord(id) {
 }
 
 /* 2. Level-Wise List (स्तर निहाय यादी) */
-function printLevelWiseReport(id) {
-    const r = loadRecords().find(x => x._id === id);
-    if (!r) return;
-
+function generateLevelWisePDF(r) {
     const subjects = [
         { key: 'reading', label: 'वाचन' }, { key: 'writing', label: 'लेखन' },
         { key: 'numeracy', label: 'संख्याज्ञान' }, { key: 'operations', label: 'गणितीय क्रिया' }
@@ -1411,9 +1407,9 @@ function printLevelWiseReport(id) {
 
     let htmlContent = '';
     subjects.forEach(subj => {
-        let groupA = r.students.filter(s => s[subj.key].startsWith('A')).map(s => s.name);
-        let groupB = r.students.filter(s => s[subj.key].startsWith('B')).map(s => s.name);
-        let groupC = r.students.filter(s => s[subj.key].startsWith('C')).map(s => s.name);
+        let groupA = r.students.filter(s => (s[subj.key] || '').startsWith('A')).map(s => s.name);
+        let groupB = r.students.filter(s => (s[subj.key] || '').startsWith('B')).map(s => s.name);
+        let groupC = r.students.filter(s => (s[subj.key] || '').startsWith('C')).map(s => s.name);
 
         htmlContent += `
             <h3 class="subj-title">${subj.label} - स्तर निहाय यादी</h3>
@@ -1466,6 +1462,10 @@ function printLevelWiseReport(id) {
     setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
 }
 
+function printLevelWiseReport(id) {
+    const r = loadRecords().find(x => x._id === id);
+    if (r) generateLevelWisePDF(r);
+}
 
 /* 3. Overall Consolidated Report */
 function printConsolidatedReport() {
@@ -1482,10 +1482,10 @@ function printConsolidatedReport() {
     allRecs.forEach((r, i) => {
         studentCount += r.students.length;
         r.students.forEach(s => {
-            if (s.reading.startsWith('A')) gt.reading.A++; else if (s.reading.startsWith('B')) gt.reading.B++; else if (s.reading.startsWith('C')) gt.reading.C++;
-            if (s.writing.startsWith('A')) gt.writing.A++; else if (s.writing.startsWith('B')) gt.writing.B++; else if (s.writing.startsWith('C')) gt.writing.C++;
-            if (s.numeracy.startsWith('A')) gt.numeracy.A++; else if (s.numeracy.startsWith('B')) gt.numeracy.B++; else if (s.numeracy.startsWith('C')) gt.numeracy.C++;
-            if (s.operations.startsWith('A')) gt.operations.A++; else if (s.operations.startsWith('B')) gt.operations.B++; else if (s.operations.startsWith('C')) gt.operations.C++;
+            if ((s.reading||'').startsWith('A')) gt.reading.A++; else if ((s.reading||'').startsWith('B')) gt.reading.B++; else if ((s.reading||'').startsWith('C')) gt.reading.C++;
+            if ((s.writing||'').startsWith('A')) gt.writing.A++; else if ((s.writing||'').startsWith('B')) gt.writing.B++; else if ((s.writing||'').startsWith('C')) gt.writing.C++;
+            if ((s.numeracy||'').startsWith('A')) gt.numeracy.A++; else if ((s.numeracy||'').startsWith('B')) gt.numeracy.B++; else if ((s.numeracy||'').startsWith('C')) gt.numeracy.C++;
+            if ((s.operations||'').startsWith('A')) gt.operations.A++; else if ((s.operations||'').startsWith('B')) gt.operations.B++; else if ((s.operations||'').startsWith('C')) gt.operations.C++;
         });
 
         schoolRows += `<tr>
@@ -1564,7 +1564,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNetStatus();
         updatePendingCount();
         
-        // Auto pull from Cloud silently on app open (records + shared PIN)
+        // Auto pull from Cloud silently on app open
         if(navigator.onLine) fetchFromCloud(true);
     } catch(e) {
         console.error("Initialization Error:", e);
