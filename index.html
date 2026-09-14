@@ -400,6 +400,7 @@ const GS_URL = "https://script.google.com/macros/s/AKfycbxq6E9a8W19yym-QohuBi3f2
 
 let rowCount = 0;
 let cloudFetchInFlight = null;
+let activeEditRecordId = null; // Tracks which record the admin explicitly clicked "Edit" for
 
 // Draft & Edit Storage variables
 let currentClassGroup = 'std2';
@@ -545,6 +546,8 @@ async function loadSavedDataForEditing() {
 
 function onSchoolChange() {
     try {
+        activeEditRecordId = null; // User manually changed school, reset edit mode
+        
         const sel = document.getElementById('schoolSelect');
         const wrap = document.getElementById('otherSchoolWrap');
         const sVal = sel.value;
@@ -596,6 +599,7 @@ function onSchoolChange() {
 }
 
 function onTeacherChange() {
+    activeEditRecordId = null; // User manually changed teacher, reset edit mode
     const sel = document.getElementById('teacherSelect');
     if (sel.value === "other_teacher") {
         const customName = prompt("शिक्षकाचे नाव टाका:");
@@ -736,11 +740,11 @@ function restoreFromDraft(group) {
     const csvWrap = document.getElementById('csvBtnWrap');
 
     if (draft.id) {
-        if (isAdminAuthed()) {
-            // Admin Unlocked
+        if (isAdminAuthed() && activeEditRecordId === draft.id) {
+            // Admin Unlocked explicitly via "Edit" button
             setTableLock(false);
             csvWrap.style.display = 'flex';
-            banner.innerHTML = `✏️ <b>अॅडमिन मोड:</b> या गटाची नोंद आधीच जतन केलेली आहे. तुम्ही विद्यार्थी यादीत बदल करून अपडेट करू शकता.`;
+            banner.innerHTML = `✏️ <b>अॅडमिन मोड:</b> तुम्ही ही नोंद एडिट करत आहात. बदल करून अपडेट करा.`;
             banner.style.background = '#eaf0fb';
             banner.style.color = '#004494';
             banner.style.borderColor = '#b6ccf5';
@@ -750,10 +754,10 @@ function restoreFromDraft(group) {
             saveBtn.style.background = '#0056b3';
             saveBtn.style.display = 'inline-flex';
         } else {
-            // Teacher Locked (Read Only)
+            // Teacher Locked (Read Only) OR Admin just viewing
             setTableLock(true);
             csvWrap.style.display = 'none';
-            banner.innerHTML = `🔒 <b>माहिती लॉक आहे:</b> ही नोंद आधीच जतन केली आहे. यात बदल करण्यासाठी <b>'केंद्रप्रमुख (डॅशबोर्ड)'</b> टॅबमध्ये जाऊन PIN द्वारे लॉगीन करा.`;
+            banner.innerHTML = `🔒 <b>माहिती लॉक आहे:</b> ही नोंद आधीच जतन केली आहे. यात बदल करण्यासाठी डॅशबोर्ड मधून <b>'✏️ एडिट'</b> बटण दाबा.`;
             banner.style.background = '#fff4e2';
             banner.style.color = '#c67c00';
             banner.style.borderColor = '#ffe0a8';
@@ -779,6 +783,7 @@ function updateClassGroup(preserveData = false) {
         saveCurrentToDraft();
     }
 
+    activeEditRecordId = null; // User manually changed group without dashboard, secure it
     document.getElementById('tableSubtitle').innerText = (newGroup === 'std2' ? 'इयत्ता २ री' : 'इयत्ता ३ री ते ५ वी') + ' | विषय क्षेत्रेः वाचन, लेखन, संख्याज्ञान, गणितीय क्रिया';
     
     if (!preserveData) {
@@ -800,6 +805,7 @@ function resetFormFields() {
     document.getElementById('evalTaluka').value = 'अंबाजोगाई';
     document.getElementById('classSelect').value = 'std2';
     currentClassGroup = 'std2';
+    activeEditRecordId = null; 
     
     resetDrafts();
     restoreFromDraft('std2');
@@ -1013,11 +1019,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
             students: validStudents
         };
         recs.unshift(rec);
-        currentDraft.id = rec._id; // Track as edit for subsequent clicks
+        currentDraft.id = rec._id; 
     }
 
     saveRecords(recs);
     if(navigator.onLine) syncRecord(rec._id, false);
+    
+    activeEditRecordId = null; // Clear edit mode after save to secure it again
     
     // Check if other group is already filled for Prompting
     const otherGroup = currentClassGroup === 'std2' ? 'std3to5' : 'std2';
@@ -1025,7 +1033,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     const otherDraft = formDrafts[otherGroup];
     
     if (otherDraft.id) {
-        if (confirm(`✅ माहिती ${isUpdate ? 'अपडेट' : 'जतन'} झाली!\n\nयाच शिक्षकाची '${otherGroupName}' ची माहिती सुद्धा उपलब्ध आहे. तुम्हाला ती पाहायची/अपडेट करायची आहे का? (OK = होय)`)) {
+        if (confirm(`✅ माहिती ${isUpdate ? 'अपडेट' : 'जतन'} झाली!\n\nयाच शिक्षकाची '${otherGroupName}' ची माहिती सुद्धा उपलब्ध आहे. तुम्हाला ती पाहायची आहे का? (OK = होय)`)) {
             document.getElementById('classSelect').value = otherGroup;
             updateClassGroup(false);
             return;
@@ -1104,6 +1112,7 @@ document.getElementById('loginPinBtn').addEventListener('click', () => {
 document.getElementById('adminLogoutBtn').addEventListener('click', () => { 
   sessionStorage.removeItem(SS_AUTH); 
   document.getElementById('loginPinInput').value=''; 
+  activeEditRecordId = null; // Clear edit permission on logout
   document.querySelector('.tab-btn[data-view="formView"]').click(); 
 });
 
@@ -1149,8 +1158,10 @@ function unlockSchoolRecord(id, name) {
     }
 }
 
-// Admin Helper: Load record directly to form for quick editing
-async function editRecordFromAdmin(schoolName, teacherName, evalGroup) {
+// Admin Helper: Load record directly to form and unlock it
+async function editRecordFromAdmin(schoolName, teacherName, evalGroup, recordId) {
+    activeEditRecordId = recordId; // Give explicit permission to unlock THIS record
+
     const sSelect = document.getElementById('schoolSelect');
     let sIdx = schoolList.findIndex(s => s.name === schoolName);
     
@@ -1196,7 +1207,7 @@ async function editRecordFromAdmin(schoolName, teacherName, evalGroup) {
     document.getElementById('classSelect').value = evalGroup;
     currentClassGroup = evalGroup;
 
-    // Load data
+    // Load data & unlock because activeEditRecordId is set
     await loadSavedDataForEditing();
     
     // Jump to Form Tab
@@ -1268,7 +1279,7 @@ function renderAdminDashboard() {
                     <div class="meta">विद्यार्थी: <b>${rec.students.length}</b> | दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
                     ${recordBadgeHtml(rec)}
                     <div class="rec-actions">
-                        <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}')">✏️ एडिट</button>
+                        <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}', '${rec._id}')">✏️ एडिट</button>
                         <button class="btn-secondary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
                         <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर</button>
                         <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🗑️ डिलीट</button>
@@ -1295,7 +1306,7 @@ function renderAdminDashboard() {
             <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
             ${recordBadgeHtml(rec)}
             <div class="rec-actions">
-                <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}')">✏️ एडिट</button>
+                <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}', '${rec._id}')">✏️ एडिट</button>
                 <button class="btn-secondary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
                 <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर</button>
                 <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🗑️ डिलीट</button>
@@ -1546,7 +1557,7 @@ function generateLevelWisePDF(r) {
             <div><b>शाळा:</b> ${r.school || '-'}</div>
             <div><b>वर्गशिक्षक:</b> ${r.teacher || '-'}</div>
             <div><b>दिनांक:</b> ${r.date || '-'}</div>
-            <div><b>गट:</b> ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ वी'}</div>
+            <div><b>गट:</b> ${r.evalGroup==='std2'?'इयत्ता २ री':'इयत्ता ३ री ते ५ গুপ্ত'}</div>
         </div>
         ${htmlContent}
         <div style="text-align:center; margin-top:30px;"><button style="padding:10px 20px; background:#0056b3; color:white; border:none; cursor:pointer;" onclick="window.print()">🖨️ PDF म्हणून जतन करा</button></div>
