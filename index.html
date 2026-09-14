@@ -456,6 +456,9 @@ document.querySelectorAll('.tabbar > .tab-btn').forEach(btn => {
         } else {
              document.getElementById('formToolbar').style.display = 'none';
         }
+        
+        // Re-evaluate form lock based on auth when coming back to form view
+        restoreFromDraft(currentClassGroup);
     }
   });
 });
@@ -508,7 +511,7 @@ function getCurrentTeacherName() {
 
 /** 
  * Checks if records exist for the selected school & teacher.
- * If yes, it loads them into formDrafts so the user can edit them.
+ * If yes, it loads them into formDrafts so the user can view/edit them.
  */
 async function loadSavedDataForEditing() {
     const schoolName = getCurrentSchoolName();
@@ -666,7 +669,17 @@ function addRow() {
     document.getElementById('tableBody').appendChild(tr);
 }
 
-/* ======== Form Draft & Edit System ======== */
+/* ======== Form Draft, Edit & Lock System ======== */
+
+function setTableLock(isLocked) {
+    const inputs = document.querySelectorAll('#tableBody input, #tableBody select');
+    inputs.forEach(el => el.disabled = isLocked);
+    
+    document.getElementById('evalDate').disabled = isLocked;
+    document.getElementById('evalCenter').disabled = isLocked;
+    document.getElementById('evalTaluka').disabled = isLocked;
+    document.getElementById('evalDistrict').disabled = isLocked;
+}
 
 function saveCurrentToDraft() {
     const rows = document.querySelectorAll('#tableBody tr');
@@ -717,19 +730,45 @@ function restoreFromDraft(group) {
     while(rowCount < 10) addRow();
     generateSummary();
 
-    // Toggle Banner & Update Button based on Edit Mode
+    // Toggle Banner, Button, and Locks based on Edit Mode & Admin Auth
     const banner = document.getElementById('editBanner');
     const saveBtn = document.getElementById('saveBtn');
+    const csvWrap = document.getElementById('csvBtnWrap');
 
     if (draft.id) {
-        banner.innerHTML = `✏️ <b>माहिती उपलब्ध:</b> या गटाची नोंद आधीच जतन केलेली आहे. तुम्ही विद्यार्थी यादीत बदल करून पुन्हा अपडेट करू शकता.`;
-        banner.style.display = 'block';
-        saveBtn.innerHTML = '💾 अपडेट करा (Update)';
-        saveBtn.style.background = '#0056b3'; // Blue for update
+        if (isAdminAuthed()) {
+            // Admin Unlocked
+            setTableLock(false);
+            csvWrap.style.display = 'flex';
+            banner.innerHTML = `✏️ <b>अॅडमिन मोड:</b> या गटाची नोंद आधीच जतन केलेली आहे. तुम्ही विद्यार्थी यादीत बदल करून अपडेट करू शकता.`;
+            banner.style.background = '#eaf0fb';
+            banner.style.color = '#004494';
+            banner.style.borderColor = '#b6ccf5';
+            banner.style.display = 'block';
+            
+            saveBtn.innerHTML = '💾 अपडेट करा (Update)';
+            saveBtn.style.background = '#0056b3';
+            saveBtn.style.display = 'inline-flex';
+        } else {
+            // Teacher Locked (Read Only)
+            setTableLock(true);
+            csvWrap.style.display = 'none';
+            banner.innerHTML = `🔒 <b>माहिती लॉक आहे:</b> ही नोंद आधीच जतन केली आहे. यात बदल करण्यासाठी <b>'केंद्रप्रमुख (डॅशबोर्ड)'</b> टॅबमध्ये जाऊन PIN द्वारे लॉगीन करा.`;
+            banner.style.background = '#fff4e2';
+            banner.style.color = '#c67c00';
+            banner.style.borderColor = '#ffe0a8';
+            banner.style.display = 'block';
+            
+            saveBtn.style.display = 'none';
+        }
     } else {
+        // New Entry - Unlocked for everyone
+        setTableLock(false);
+        csvWrap.style.display = 'flex';
         banner.style.display = 'none';
         saveBtn.innerHTML = '💾 जतन करा (Save)';
-        saveBtn.style.background = '#1e8e5a'; // Green for save
+        saveBtn.style.background = '#1e8e5a';
+        saveBtn.style.display = 'inline-flex';
     }
 }
 
@@ -1063,7 +1102,8 @@ document.getElementById('loginPinBtn').addEventListener('click', () => {
 });
 
 document.getElementById('adminLogoutBtn').addEventListener('click', () => { 
-  sessionStorage.removeItem(SS_AUTH); document.getElementById('loginPinInput').value=''; 
+  sessionStorage.removeItem(SS_AUTH); 
+  document.getElementById('loginPinInput').value=''; 
   document.querySelector('.tab-btn[data-view="formView"]').click(); 
 });
 
@@ -1107,6 +1147,60 @@ function unlockSchoolRecord(id, name) {
             showToast('⚠️ सध्या ऑफलाइन आहात — पुन्हा इंटरनेट आल्यावर ही नोंद Google Sheet मध्ये पुन्हा दिसू शकते, तेव्हा पुन्हा डिलीट करा.');
         }
     }
+}
+
+// Admin Helper: Load record directly to form for quick editing
+async function editRecordFromAdmin(schoolName, teacherName, evalGroup) {
+    const sSelect = document.getElementById('schoolSelect');
+    let sIdx = schoolList.findIndex(s => s.name === schoolName);
+    
+    if (sIdx >= 0) {
+        sSelect.value = sIdx;
+        document.getElementById('otherSchoolWrap').style.display = 'none';
+    } else {
+        sSelect.value = 'other';
+        document.getElementById('otherSchoolWrap').style.display = 'block';
+        document.getElementById('otherSchoolName').value = schoolName;
+    }
+
+    // Populate teacher list
+    const tSel = document.getElementById('teacherSelect');
+    tSel.innerHTML = '<option value="">-- शिक्षक निवडा --</option>';
+    if (sIdx >= 0) {
+        const teachers = teacherData[schoolName];
+        if (teachers) {
+            teachers.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.text = `${t.name} (${t.desig})`;
+                tSel.appendChild(opt);
+            });
+        }
+    }
+    const oOpt = document.createElement('option');
+    oOpt.value = "other_teacher";
+    oOpt.text = "इतर (यादीत नसल्यास)";
+    tSel.appendChild(oOpt);
+    
+    // Check if teacher is in list, if not add
+    let tExists = Array.from(tSel.options).some(o => o.value === teacherName);
+    if (!tExists) {
+        const cOpt = document.createElement('option');
+        cOpt.value = teacherName;
+        cOpt.text = teacherName;
+        tSel.insertBefore(cOpt, tSel.lastElementChild);
+    }
+    tSel.value = teacherName;
+
+    // Set Group
+    document.getElementById('classSelect').value = evalGroup;
+    currentClassGroup = evalGroup;
+
+    // Load data
+    await loadSavedDataForEditing();
+    
+    // Jump to Form Tab
+    document.querySelector('.tab-btn[data-view="formView"]').click();
 }
 
 function recordBadgeHtml(rec) {
@@ -1174,8 +1268,9 @@ function renderAdminDashboard() {
                     <div class="meta">विद्यार्थी: <b>${rec.students.length}</b> | दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
                     ${recordBadgeHtml(rec)}
                     <div class="rec-actions">
-                        <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
-                        <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+                        <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}')">✏️ एडिट</button>
+                        <button class="btn-secondary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
+                        <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर</button>
                         <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${school.name}')">🗑️ डिलीट</button>
                     </div>
                 </div>`;
@@ -1200,8 +1295,9 @@ function renderAdminDashboard() {
             <div class="meta">दिनांक: ${new Date(rec._savedAt).toLocaleString('mr-IN')}</div>
             ${recordBadgeHtml(rec)}
             <div class="rec-actions">
-                <button class="btn-primary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
-                <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर निहाय</button>
+                <button class="btn-primary btn-sm" onclick="editRecordFromAdmin('${rec.school}', '${rec.teacher}', '${rec.evalGroup}')">✏️ एडिट</button>
+                <button class="btn-secondary btn-sm" onclick="printRecord('${rec._id}')">🖨️ रिपोर्ट</button>
+                <button class="btn-secondary btn-sm" onclick="printLevelWiseReport('${rec._id}')" style="background:#eaf0fb; color:var(--navy); border:1px solid #b6ccf5;">🖨️ स्तर</button>
                 <button class="btn-danger btn-sm" onclick="unlockSchoolRecord('${rec._id}', '${rec.school}')">🗑️ डिलीट</button>
             </div>
         </div>`;
